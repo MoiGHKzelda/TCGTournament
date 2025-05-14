@@ -1,63 +1,64 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import "./Login.css";
+import React, { useState } from 'react';
+import { Form, Button, Container, Row, Col, Alert } from 'react-bootstrap';
+import { Link, useNavigate } from 'react-router-dom';
 
-const Login = ({ setAuth }) => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+const Login = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [mensaje, setMensaje] = useState('');
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email || !password) return setError("Completa todos los campos");
 
     try {
-      // Simula login
-      if (email === "test@test.com" && password === "1234") {
-        setAuth(true);
-        navigate("/home");
-      } else {
-        setError("Credenciales inválidas");
+      const response = await fetch('http://localhost:8000/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Credenciales inválidas');
       }
-    } catch {
-      setError("Error al iniciar sesión");
+
+      const data = await response.json();
+      console.log('Login correcto:', data);
+      setMensaje('Inicio de sesión exitoso');
+
+      // localStorage.setItem('token', data.token); // si se usa token
+      navigate('/');
+
+    } catch (error) {
+      setMensaje(error.message);
     }
   };
 
   return (
-    <div className="login-container">
-      <form onSubmit={handleSubmit} className="login-form card shadow p-4">
-        <h2 className="mb-3 text-center">Iniciar Sesión</h2>
-
-        {error && <div className="alert alert-danger">{error}</div>}
-
-        <div className="mb-3">
-          <label>Email</label>
-          <input
-            type="email"
-            className="form-control"
-            onChange={(e) => setEmail(e.target.value)}
-            value={email}
-          />
-        </div>
-
-        <div className="mb-3">
-          <label>Contraseña</label>
-          <input
-            type="password"
-            className="form-control"
-            onChange={(e) => setPassword(e.target.value)}
-            value={password}
-          />
-        </div>
-
-        <button className="btn btn-danger w-100">Entrar</button>
-        <p className="mt-3 text-center">
-          ¿No tienes cuenta? <Link to="/register">Regístrate aquí</Link>
-        </p>
-      </form>
-    </div>
+    <Container className="d-flex align-items-center justify-content-center" style={{ minHeight: '100vh' }}>
+      <Row className="w-100" style={{ maxWidth: '400px' }}>
+        <Col>
+          <h2 className="text-center mb-4" style={{ color: '#B22222' }}>Iniciar Sesión</h2>
+          {mensaje && <Alert variant="danger">{mensaje}</Alert>}
+          <Form onSubmit={handleSubmit}>
+            <Form.Group id="email" className="mb-3">
+              <Form.Label>Correo Electrónico</Form.Label>
+              <Form.Control type="email" required value={email} onChange={e => setEmail(e.target.value)} />
+            </Form.Group>
+            <Form.Group id="password" className="mb-4">
+              <Form.Label>Contraseña</Form.Label>
+              <Form.Control type="password" required value={password} onChange={e => setPassword(e.target.value)} />
+            </Form.Group>
+            <Button type="submit" className="w-100" style={{ backgroundColor: '#B22222', border: 'none' }}>
+              Iniciar sesión
+            </Button>
+          </Form>
+          <div className="text-center mt-3">
+            ¿No tienes cuenta? <Link to="/register">Regístrate</Link>
+          </div>
+        </Col>
+      </Row>
+    </Container>
   );
 };
 
