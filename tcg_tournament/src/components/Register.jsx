@@ -9,18 +9,17 @@ const Register = () => {
   const [password, setPassword] = useState('');
   const [mensaje, setMensaje] = useState('');
   const navigate = useNavigate();
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:8000/api/register', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nombre, email, password }),
       });
 
       if (!response.ok) throw new Error('No se pudo registrar el usuario');
-
+      console.log('🟡 Enviando:', { nombre, email, password });
       setMensaje('Usuario registrado con éxito');
       setTimeout(() => navigate('/'), 1500);
     } catch (error) {

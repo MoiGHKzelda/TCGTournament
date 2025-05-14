@@ -1,8 +1,10 @@
-<?php 
+<?php
+
 namespace App\Http\Controllers;
 
 use App\Models\Usuario;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 
 class AuthController extends Controller
 {
@@ -22,10 +24,5 @@ class AuthController extends Controller
         ]);
 
         return response()->json(['message' => 'Usuario registrado correctamente'], 201);
-    }
-
-    public function login(Request $request)
-    {
-        // se implementará después
     }
 }

@@ -2,6 +2,6 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
+Route::match(['GET', 'OPTIONS', 'POST'], '/register', function () {
+    return response()->json(['ok' => true]);
 });
