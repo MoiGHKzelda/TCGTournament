@@ -1,43 +1,78 @@
 import React from 'react';
-import { Container, Row, Col, Card } from 'react-bootstrap';
-import Navbar from './Navbar';
+import { Card, Row, Col, Button } from 'react-bootstrap';
+import Layout from './Layout';
 
+const torneos = [
+  {
+    id: 1,
+    nombre: 'Torneo de Commander',
+    formato: 'Commander',
+    fecha: '01 de mayo de 2025',
+    estado: 'Activo',
+    ranking: [
+      { id: 1, nombre: 'Ana', puntos: 1500 },
+      { id: 2, nombre: 'Carlos', puntos: 1600 },
+    ],
+    jueces: ['Elena']
+  },
+  {
+    id: 2,
+    nombre: 'Torneo de Modern',
+    formato: 'Modern',
+    fecha: '15 de mayo de 2025',
+    estado: 'Activo',
+    ranking: [
+      { id: 1, nombre: 'Luis', puntos: 1650 },
+      { id: 2, nombre: 'Sofía', puntos: 1570 },
+    ],
+    jueces: ['Javier']
+  }
+];
 
 const Home = () => {
-  const ejemploCartas = [
-    {
-      nombre: 'Lightning Bolt',
-      imagen: 'https://cards.scryfall.io/normal/front/1/e/1e4e2d2e-7c91-4297-a3f9-f8c730bb20e1.jpg',
-    },
-    {
-      nombre: 'Sorin, Imperious Bloodlord',
-      imagen: 'https://cards.scryfall.io/normal/front/7/6/76b23df3-d235-4b94-9de0-89cd503e1d4a.jpg',
-    }
-  ];
-
   return (
-    <>
-      <Navbar />
-      <Container className="py-5" style={{ backgroundColor: '#F8F4E3', minHeight: '100vh' }}>
-          <h1 className="text-center mb-5" style={{ color: '#B22222', fontFamily: 'Cinzel, serif' }}>
-            Bienvenido al Portal de Torneos Magic TCG
-          </h1>
-          <Row className="g-4 justify-content-center">
-            {ejemploCartas.map((carta, idx) => (
-              <Col key={idx} xs={12} sm={6} md={4} lg={3}>
-                <Card className="h-100 shadow-sm border-0" style={{ backgroundColor: '#fff5e6' }}>
-                  <Card.Img variant="top" src={carta.imagen} alt={carta.nombre} />
-                  <Card.Body>
-                    <Card.Title className="text-center" style={{ fontFamily: 'Cinzel, serif' }}>{carta.nombre}</Card.Title>
-                  </Card.Body>
-                </Card>
-              </Col>
-            ))}
-          </Row>
-      </Container>
-    </>
-
-    
+    <Layout>
+      <h1 className="mb-4" style={{ color: '#F8F4E3' }}>Torneos Disponibles</h1>
+      <Row className="g-4">
+        {torneos.map(torneo => (
+          <Col key={torneo.id} xs={12} md={6}>
+            <Card className="h-100 border-danger text-light" style={{ backgroundColor: '#1c1c1c' }}>
+              <Card.Body>
+                <Card.Title style={{ fontFamily: 'Cinzel, serif' }}>{torneo.nombre}</Card.Title>
+                <p><strong>Formato:</strong> {torneo.formato}</p>
+                <p><strong>Fecha:</strong> {torneo.fecha} <span className="ms-3 text-success">{torneo.estado}</span></p>
+                <Button variant="danger" className="mb-3">Participar</Button>
+                <h6 className="mt-3">Ranking</h6>
+                <table className="table table-dark table-sm">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Nombre</th>
+                      <th>Puntos</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {torneo.ranking.map(j => (
+                      <tr key={j.id}>
+                        <td>{j.id}</td>
+                        <td>{j.nombre}</td>
+                        <td>{j.puntos}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <h6>Jueces</h6>
+                <ul>
+                  {torneo.jueces.map((juez, idx) => (
+                    <li key={idx}>{juez}</li>
+                  ))}
+                </ul>
+              </Card.Body>
+            </Card>
+          </Col>
+        ))}
+      </Row>
+    </Layout>
   );
 };
 

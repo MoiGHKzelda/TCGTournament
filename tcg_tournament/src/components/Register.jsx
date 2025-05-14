@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Form, Button, Container, Row, Col, Alert } from 'react-bootstrap';
+import { Form, Button, Row, Col, Alert, Card } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
+import AuthLayout from './AuthLayout';
 
 const Register = () => {
   const [nombre, setNombre] = useState('');
@@ -11,7 +12,6 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
       const response = await fetch('http://localhost:8000/api/register', {
         method: 'POST',
@@ -19,49 +19,48 @@ const Register = () => {
         body: JSON.stringify({ nombre, email, password }),
       });
 
-      if (!response.ok) {
-        throw new Error('Error al registrar usuario');
-      }
+      if (!response.ok) throw new Error('No se pudo registrar el usuario');
 
-      const data = await response.json();
-      console.log('Registro exitoso:', data);
-      setMensaje('Usuario registrado exitosamente');
-      navigate('/login');
-
+      setMensaje('Usuario registrado con éxito');
+      setTimeout(() => navigate('/'), 1500);
     } catch (error) {
       setMensaje(error.message);
     }
   };
 
   return (
-    <Container className="d-flex align-items-center justify-content-center" style={{ minHeight: '100vh' }}>
-      <Row className="w-100" style={{ maxWidth: '400px' }}>
-        <Col>
-          <h2 className="text-center mb-4" style={{ color: '#B22222' }}>Registro</h2>
-          {mensaje && <Alert variant="info">{mensaje}</Alert>}
-          <Form onSubmit={handleSubmit}>
-            <Form.Group className="mb-3">
-              <Form.Label>Nombre</Form.Label>
-              <Form.Control type="text" required value={nombre} onChange={e => setNombre(e.target.value)} />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Correo Electrónico</Form.Label>
-              <Form.Control type="email" required value={email} onChange={e => setEmail(e.target.value)} />
-            </Form.Group>
-            <Form.Group className="mb-4">
-              <Form.Label>Contraseña</Form.Label>
-              <Form.Control type="password" required value={password} onChange={e => setPassword(e.target.value)} />
-            </Form.Group>
-            <Button type="submit" className="w-100" style={{ backgroundColor: '#B22222', border: 'none' }}>
-              Registrarse
-            </Button>
-          </Form>
-          <div className="text-center mt-3">
-            ¿Ya tienes cuenta? <Link to="/login">Inicia sesión</Link>
-          </div>
+    <AuthLayout>
+      <Row className="justify-content-center w-100 px-3">
+        <Col xs={12} sm={10} md={6} lg={4}>
+          <Card className="shadow-lg border border-danger rounded-4 px-3 py-4" style={{ backgroundColor: '#1c1c1c', color: '#F8F4E3' }}>
+            <Card.Body>
+              <h2 className="text-center mb-4" style={{ fontFamily: 'Cinzel, serif' }}>Registro</h2>
+              {mensaje && <Alert variant="info">{mensaje}</Alert>}
+              <Form onSubmit={handleSubmit}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Nombre</Form.Label>
+                  <Form.Control type="text" value={nombre} onChange={e => setNombre(e.target.value)} required className="bg-dark text-light border-secondary" />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Correo Electrónico</Form.Label>
+                  <Form.Control type="email" value={email} onChange={e => setEmail(e.target.value)} required className="bg-dark text-light border-secondary" />
+                </Form.Group>
+                <Form.Group className="mb-4">
+                  <Form.Label>Contraseña</Form.Label>
+                  <Form.Control type="password" value={password} onChange={e => setPassword(e.target.value)} required className="bg-dark text-light border-secondary" />
+                </Form.Group>
+                <Button type="submit" className="w-100 py-2" style={{ backgroundColor: '#B22222', border: 'none' }}>
+                  Registrarse
+                </Button>
+              </Form>
+              <div className="text-center mt-3">
+                ¿Ya tienes cuenta? <Link to="/" style={{ color: '#FFD700' }}>Inicia sesión</Link>
+              </div>
+            </Card.Body>
+          </Card>
         </Col>
       </Row>
-    </Container>
+    </AuthLayout>
   );
 };
 
