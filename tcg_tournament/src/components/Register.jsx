@@ -2,24 +2,21 @@ import React, { useState } from 'react';
 import { Form, Button, Row, Col, Alert, Card } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthLayout from './AuthLayout';
+import { postRegister } from '../services/api';
 
 const Register = () => {
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [telefono, setTelefono] = useState('');
+  const [dni, setDni] = useState('');
   const [mensaje, setMensaje] = useState('');
   const navigate = useNavigate();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre, email, password }),
-      });
-
-      if (!response.ok) throw new Error('No se pudo registrar el usuario');
-      console.log('🟡 Enviando:', { nombre, email, password });
+      await postRegister({ nombre, email, password, telefono, dni });
       setMensaje('Usuario registrado con éxito');
       setTimeout(() => navigate('/'), 1500);
     } catch (error) {
@@ -43,6 +40,14 @@ const Register = () => {
                 <Form.Group className="mb-3">
                   <Form.Label>Correo Electrónico</Form.Label>
                   <Form.Control type="email" value={email} onChange={e => setEmail(e.target.value)} required className="bg-dark text-light border-secondary" />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Teléfono</Form.Label>
+                  <Form.Control type="text" value={telefono} onChange={e => setTelefono(e.target.value)} required className="bg-dark text-light border-secondary" />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>DNI</Form.Label>
+                  <Form.Control type="text" value={dni} onChange={e => setDni(e.target.value)} required className="bg-dark text-light border-secondary" />
                 </Form.Group>
                 <Form.Group className="mb-4">
                   <Form.Label>Contraseña</Form.Label>

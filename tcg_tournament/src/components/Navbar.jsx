@@ -3,14 +3,14 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
     navigate('/');
   };
-
+  if (loading) return null;
   return (
     <nav className="navbar navbar-expand-lg" style={{ backgroundColor: '#1C1C1C' }}>
       <div className="container-fluid px-4">
@@ -21,15 +21,18 @@ const Navbar = () => {
           <ul className="navbar-nav ms-auto">
             {user ? (
               <>
+                {user?.nombre && (
+                  <li className="nav-item">
+                    <span className="nav-link" style={{ color: '#F8F4E3' }}>
+                      ¡Hola, {user.nombre}!
+                    </span>
+                  </li>
+                )}
                 <li className="nav-item">
-                  <span className="nav-link" style={{ color: '#F8F4E3' }}>
-                    ¡Hola, {user.userName}!
-                  </span>
-                </li>
-                <li className="nav-item">
-                  <NavLink to="/home" className="nav-link" style={{ color: '#F8F4E3' }}>
-                    Inicio
-                  </NavLink>
+                <NavLink to={user?.rol === 'admin' ? '/admin/dashboard' : '/usuario/inicio'} className="nav-link" style={{ color: '#F8F4E3' }}>
+                  Inicio
+                </NavLink>
+
                 </li>
                 <li className="nav-item">
                   <button onClick={handleLogout} className="btn btn-outline-danger">

@@ -1,34 +1,32 @@
 import React, { useState } from 'react';
 import { Form, Button, Row, Col, Alert, Card } from 'react-bootstrap';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { Navigate, Link } from 'react-router-dom';
 import AuthLayout from './AuthLayout';
+import { useAuth } from '../context/AuthContext';
+import { postLogin } from '../services/api';
+
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [mensaje, setMensaje] = useState('');
-  const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, user } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) throw new Error('Credenciales inválidas');
-
-      const data = await response.json();
-      login(data.token, data.user.nombre);
-      navigate('/home');
+      const data = await postLogin(email, password);
+      login(data.usuario, data.token);
     } catch (error) {
       setMensaje(error.message);
     }
   };
+
+  if (user) {
+    const destino = user.rol === 'admin' ? '/admin/dashboard' : '/usuario/inicio';
+    return <Navigate to={destino} replace />;
+  }
+
 
   return (
     <AuthLayout>
@@ -41,14 +39,26 @@ const Login = () => {
               <Form onSubmit={handleSubmit}>
                 <Form.Group className="mb-3">
                   <Form.Label>Correo Electrónico</Form.Label>
-                  <Form.Control type="email" value={email} onChange={e => setEmail(e.target.value)} required className="bg-dark text-light border-secondary" />
+                  <Form.Control
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="bg-dark text-light border-secondary"
+                  />
                 </Form.Group>
                 <Form.Group className="mb-4">
                   <Form.Label>Contraseña</Form.Label>
-                  <Form.Control type="password" value={password} onChange={e => setPassword(e.target.value)} required className="bg-dark text-light border-secondary" />
+                  <Form.Control
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="bg-dark text-light border-secondary"
+                  />
                 </Form.Group>
                 <Button type="submit" className="w-100 py-2" style={{ backgroundColor: '#B22222', border: 'none' }}>
-                  Iniciar sesión
+                  Entrar
                 </Button>
               </Form>
               <div className="text-center mt-3">
