@@ -63,6 +63,12 @@ Route::middleware('auth:sanctum')->group(function () {
         return $request->user();
     });
 
+    // Funciones personalizadas
+    Route::get('/torneos/{id}/recompensas', [CartaRecompensaController::class, 'porTorneo']);
+    Route::post('/torneos/{id}/recompensas', [CartaRecompensaController::class, 'asociarCarta']);
+    Route::post('/torneos/{id}/inscribirse', [TorneoJugadorController::class, 'inscribirse']);
+    Route::get('/torneos/{id}/jugadores', [TorneoJugadorController::class, 'listarPorTorneo']);
+
     // CRUD de modelos
     Route::apiResource('usuarios', UsuarioController::class);
     Route::apiResource('perfiles', PerfilController::class);
@@ -73,11 +79,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('mensajes', MensajeForoController::class);
     Route::apiResource('anuncios', AnuncioController::class);
     Route::apiResource('recompensas', CartaRecompensaController::class);
-
-    // Funciones personalizadas
-    Route::post('/torneos/{id}/inscribirse', [TorneoJugadorController::class, 'inscribirse']);
-    Route::get('/torneos/{id}/jugadores', [TorneoJugadorController::class, 'listarPorTorneo']);
-
-    Route::get('/torneos/{id}/recompensas', [CartaRecompensaController::class, 'porTorneo']);
-    Route::post('/torneos/{id}/recompensas', [CartaRecompensaController::class, 'asociarCarta']);
 });
+

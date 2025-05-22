@@ -1,11 +1,10 @@
 // ✅ AdminDashboard.jsx
 import React, { useEffect, useState } from 'react';
-import { Button, Col, Row, Card, Container, Toast, ToastContainer } from 'react-bootstrap';
+import { Button, Col, Row, Card, Container, Toast, ToastContainer, ListGroup } from 'react-bootstrap';
 import TorneoLayout from '../User/TorneoLayout';
 import FormularioTorneo from './FormularioTorneo';
 import { apiGet, apiDelete } from '../../services/api';
 import MdlRecompensa from './MdlRecompensa';
-
 
 const AdminDashboard = () => {
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
@@ -15,6 +14,7 @@ const AdminDashboard = () => {
   const [mostrarToast, setMostrarToast] = useState(false);
   const [torneoSeleccionado, setTorneoSeleccionado] = useState(null);
   const [showRecompensa, setShowRecompensa] = useState(false);
+  const [recompensas, setRecompensas] = useState([]);
 
   const abrirFormulario = () => setMostrarFormulario(true);
   const cerrarFormulario = () => {
@@ -46,26 +46,49 @@ const AdminDashboard = () => {
       } catch (error) {
         setMensajeToast('❌ Error al eliminar el torneo');
         setMostrarToast(true);
-        console.error(error);
       }
     }
   };
-  // Función para buscar en Scryfall
-  const buscarCartaEnScryfall = async (nombre) => {
-    const res = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(nombre)}`);
-    const data = await res.json();
-    return data.data || [];
+
+  const cargarRecompensas = async () => {
+    try {
+      const recompensasAll = [];
+      for (const torneo of torneos) {
+        const data = await apiGet(`torneos/${torneo.id}/recompensas`);
+        recompensasAll.push(...data.map(r => ({ ...r, torneo_id: torneo.id })));
+      }
+      setRecompensas(recompensasAll);
+    } catch (error) {
+      console.error('Error al cargar recompensas', error);
+    }
   };
 
+  const eliminarRecompensa = async (id) => {
+    if (confirm('¿Eliminar esta recompensa?')) {
+      try {
+        await apiDelete(`recompensas/${id}`);
+        setRecompensas((prev) => prev.filter((r) => r.id !== id));
+        setMensajeToast('Recompensa eliminada.');
+        setMostrarToast(true);
+      } catch (error) {
+        setMensajeToast('❌ Error al eliminar la recompensa');
+        setMostrarToast(true);
+      }
+    }
+  };
+  
 
   useEffect(() => {
     apiGet('torneos')
       .then((data) => {
-        console.log('🔁 Torneos:', data);
         setTorneos(Array.isArray(data) ? data : data.data || []);
       })
       .catch(() => setTorneos([]));
   }, []);
+
+  useEffect(() => {
+    if (torneos.length > 0) cargarRecompensas();
+  }, [torneos]);
 
   return (
     <TorneoLayout>
@@ -80,44 +103,70 @@ const AdminDashboard = () => {
         </div>
         <Row className="justify-content-center">
           {torneos.length > 0 ? (
-            torneos.map((torneo) => (
-              <Col md={5} key={torneo.id} className="mb-4">
-                <Card style={{ backgroundColor: '#1c1c1c', color: '#F8F4E3', border: '1px solid #FFD700' }}>
-                  <Card.Body>
-                    <Card.Title className="text-center">{torneo.nombre}</Card.Title>
-                    <Card.Subtitle className="mb-2 text-muted text-center ">
-                      {torneo.fecha} — {torneo.formato}
-                    </Card.Subtitle>
-                    <Card.Text className="text-center">{torneo.descripcion}</Card.Text>
-                    <div className="d-flex flex-wrap justify-content-center gap-2 mt-3">
-                      <Button variant="outline-warning" size="sm">Iniciar Torneo</Button>
-                      <Button variant="outline-light" size="sm">Pasar Ronda</Button>
-                      <Button
-                        variant="outline-info"
-                        size="sm"
-                        onClick={() => {
-                          setTorneoEditando(torneo);
-                          setMostrarFormulario(true);
-                        }}
-                      >
-                        Editar
-                      </Button>
-                      <Button variant="outline-danger" size="sm" onClick={() => eliminarTorneo(torneo.id)}>Eliminar</Button>
-                      <Button
-                        variant="outline-success"
-                        size="sm"
-                        onClick={() => {
-                          setTorneoSeleccionado(torneo.id);
-                          setShowRecompensa(true);
-                        }}
-                      >
-                        Añadir Recompensa
-                      </Button>
-                    </div>
-                  </Card.Body>
-                </Card>
-              </Col>
-            ))
+            torneos.map((torneo) => {
+              const recompensasTorneo = recompensas.filter(r => r.torneo_id === torneo.id);
+              return (
+                <Col md={5} key={torneo.id} className="mb-4">
+                  <Card style={{ backgroundColor: '#1c1c1c', color: '#F8F4E3', border: '1px solid #FFD700' }}>
+                    <Card.Body>
+                      <Card.Title className="text-center">{torneo.nombre}</Card.Title>
+                      <Card.Subtitle className="mb-2 text-muted text-center">
+                        {torneo.fecha} — {torneo.formato}
+                      </Card.Subtitle>
+                      <Card.Text className="text-center">{torneo.descripcion}</Card.Text>
+
+                      <ListGroup className="mb-2">
+                        {recompensasTorneo.map((r) => (
+                          <ListGroup.Item
+                            key={r.id}
+                            style={{
+                              backgroundColor: '#2c2c2c',
+                              border: '1px solid #FFD700',
+                              color: '#FFD700',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center'
+                            }}
+                          >
+                            {r.puesto}º - {r.nombre_carta} ({r.rareza})
+                            {torneo.estado === 'inscripcion' && (
+                              <Button size="sm" variant="danger" onClick={() => eliminarRecompensa(r.id)}>X</Button>
+                            )}
+                          </ListGroup.Item>
+                        ))}
+                      </ListGroup>
+
+                      <div className="d-flex flex-wrap justify-content-center gap-2 mt-3">
+                        <Button variant="outline-warning" size="sm">Iniciar Torneo</Button>
+                        <Button variant="outline-light" size="sm">Pasar Ronda</Button>
+                        <Button
+                          variant="outline-info"
+                          size="sm"
+                          onClick={() => {
+                            setTorneoEditando(torneo);
+                            setMostrarFormulario(true);
+                          }}
+                        >
+                          Editar
+                        </Button>
+                        <Button variant="outline-danger" size="sm" onClick={() => eliminarTorneo(torneo.id)}>Eliminar</Button>
+                        <Button
+                          variant="outline-success"
+                          size="sm"
+                          onClick={() => {
+                            setTorneoSeleccionado(torneo);
+                            setShowRecompensa(true);
+                          }}
+                          disabled={recompensasTorneo.length >= 3}
+                        >
+                          Añadir Recompensa
+                        </Button>
+                      </div>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              );
+            })
           ) : (
             <Col>
               <p style={{ color: '#888' }}>No hay torneos cargados aún.</p>
@@ -132,23 +181,22 @@ const AdminDashboard = () => {
           modo={torneoEditando ? 'editar' : 'crear'}
           torneo={torneoEditando}
         />
+
         <MdlRecompensa
           show={showRecompensa}
           handleClose={() => setShowRecompensa(false)}
-          torneoId={torneoSeleccionado}
+          torneoId={torneoSeleccionado?.id}
+          onSave={() => {
+            setShowRecompensa(false);
+            cargarRecompensas();
+          }}
         />
 
         <ToastContainer position="bottom-end" className="p-3">
-        <Toast
-          bg="success"
-          onClose={() => setMostrarToast(false)}
-          show={mostrarToast}
-          delay={3000}
-          autohide
-        >
-          <Toast.Body style={{ color: 'white' }}>{mensajeToast}</Toast.Body>
-        </Toast>
-      </ToastContainer>
+          <Toast bg="success" onClose={() => setMostrarToast(false)} show={mostrarToast} delay={3000} autohide>
+            <Toast.Body style={{ color: 'white' }}>{mensajeToast}</Toast.Body>
+          </Toast>
+        </ToastContainer>
       </Container>
     </TorneoLayout>
   );

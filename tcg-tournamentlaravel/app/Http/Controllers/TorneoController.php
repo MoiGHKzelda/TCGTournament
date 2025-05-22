@@ -32,12 +32,12 @@ class TorneoController extends Controller
     public function store(Request $request)
 {
     $request->validate([
-        'nombre' => 'required|string|max:100',
-        'descripcion' => 'nullable|string',
-        'fecha' => 'required|date',
-        'hora' => 'required',
-        'formato' => 'required|string|max:50',
-        'max_jugadores' => 'required|integer|min:2',
+        'nombre' => 'required|string|max:255',
+        'formato' => 'required|string|max:100',
+        'descripcion' => 'required|string',
+        'fecha' => 'required|date|after_or_equal:today',
+        'hora_inicio' => 'required|date_format:H:i',
+        'max_jugadores' => 'required|integer|min:2'
     ]);
 
     $torneo = Torneo::create([

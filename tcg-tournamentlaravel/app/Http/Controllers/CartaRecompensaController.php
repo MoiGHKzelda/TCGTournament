@@ -3,74 +3,41 @@
 namespace App\Http\Controllers;
 
 use App\Models\CartaRecompensa;
-use App\Http\Requests\StoreCartaRecompensaRequest;
-use App\Http\Requests\UpdateCartaRecompensaRequest;
 use Illuminate\Http\Request;
+
 class CartaRecompensaController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function porTorneo($id)
     {
-        //
+        return CartaRecompensa::where('torneo_id', $id)->orderBy('puesto')->get();
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function asociarCarta(Request $request, $id)
     {
         $request->validate([
-            'torneo_id' => 'required|exists:torneos,id',
-            'nombre_carta' => 'required|string',
-            'rareza' => 'nullable|string',
-            'descripcion' => 'nullable|string'
+            'nombre_carta' => 'required|string|max:255',
+            'rareza'       => 'required|string|max:50',
+            'descripcion'  => 'nullable|string',
+            'puesto'       => 'required|integer|between:1,3',
         ]);
 
-        $carta = CartaRecompensa::create($request->all());
+        $yaExiste = CartaRecompensa::where('torneo_id', $id)
+            ->where('puesto', $request->puesto)
+            ->exists();
 
-        return response()->json($carta, 201);
-    }
+        if ($yaExiste) {
+            return response()->json(['message' => 'Ya existe una recompensa para ese puesto'], 409);
+        }
 
+        $recompensa = CartaRecompensa::create([
+            'torneo_id'    => $id,
+            'nombre_carta' => $request->nombre_carta,
+            'rareza'       => $request->rareza,
+            'descripcion'  => $request->descripcion,
+            'puesto'       => $request->puesto,
+        ]);
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(CartaRecompensa $cartaRecompensa)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(CartaRecompensa $cartaRecompensa)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateCartaRecompensaRequest $request, CartaRecompensa $cartaRecompensa)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(CartaRecompensa $cartaRecompensa)
-    {
-        //
+        return response()->json($recompensa, 201);
     }
 }
+

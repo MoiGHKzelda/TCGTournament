@@ -8,7 +8,13 @@ const MdlRecompensa = ({ show, handleClose, torneoId }) => {
   const [resultados, setResultados] = useState([]);
   const [cargando, setCargando] = useState(false);
   const [mensaje, setMensaje] = useState('');
-
+  const [formData, setFormData] = useState({
+    nombre_carta: '',
+    rareza: '',
+    descripcion: '',
+    puesto: '1',
+  });
+  
   const buscarCarta = async () => {
     setCargando(true);
     setMensaje('');
@@ -29,7 +35,8 @@ const MdlRecompensa = ({ show, handleClose, torneoId }) => {
       await apiPost(`torneos/${torneoId}/recompensas`, {
         nombre_carta: carta.name,
         rareza: carta.rarity,
-        descripcion: carta.oracle_text || 'Sin descripción'
+        descripcion: carta.oracle_text || 'Sin descripción',
+        puesto: parseInt(formData.puesto), 
       });
       setMensaje('✅ Carta añadida como recompensa');
     } catch (error) {
@@ -37,6 +44,7 @@ const MdlRecompensa = ({ show, handleClose, torneoId }) => {
       console.error(error);
     }
   };
+  
 
   return (
     <Modal show={show} onHide={handleClose} centered size="lg">
@@ -86,6 +94,19 @@ const MdlRecompensa = ({ show, handleClose, torneoId }) => {
                   <Button variant="success" size="sm" onClick={() => agregarRecompensa(carta)}>
                     Añadir como Recompensa
                   </Button>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Puesto</Form.Label>
+                        <Form.Select
+                            name="puesto"
+                            value={formData.puesto}
+                            onChange={(e) => setFormData({ ...formData, puesto: e.target.value })}
+                            required
+                        >
+                            <option value="1">1º Puesto</option>
+                            <option value="2">2º Puesto</option>
+                            <option value="3">3º Puesto</option>
+                        </Form.Select>
+                    </Form.Group>
                 </Card.Body>
               </Card>
             </Col>
