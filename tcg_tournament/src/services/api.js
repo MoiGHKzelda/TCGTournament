@@ -89,11 +89,10 @@ export const apiDelete = async (url) => {
   });
 
   if (!res.ok) throw new Error('Error al eliminar');
-
-  
   const text = await res.text();
   return text ? JSON.parse(text) : {};
 };
+
 
 export const apiPut = async (url, body) => {
   const res = await fetch(`${API_URL}/api/${url}`, {

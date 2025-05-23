@@ -30,8 +30,9 @@ class Usuario extends Authenticatable
     }
     public function torneosInscritos()
     {
-        return $this->hasMany(TorneoJugador::class);
+        return $this->belongsToMany(Torneo::class, 'torneo_jugadors', 'usuario_id', 'torneo_id');
     }
+
     public function partidasComoJugador1()
     {
         return $this->hasMany(Partida::class, 'jugador1_id');

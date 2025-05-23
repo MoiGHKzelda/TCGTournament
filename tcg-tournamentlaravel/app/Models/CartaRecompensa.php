@@ -12,9 +12,15 @@ class CartaRecompensa extends Model
     protected $table = 'carta_recompensas';
 
     protected $fillable = [
-        'torneo_id', 'nombre_carta', 'rareza', 'descripcion', 'puesto'
+        'torneo_id',
+        'nombre_carta',
+        'rareza',
+        'descripcion',
+        'puesto',
+        'imagen_url'
     ];
-      
+    
+    
 
     public $timestamps = false;
 

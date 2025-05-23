@@ -14,8 +14,9 @@ class UsuarioController extends Controller
      */
     public function index()
     {
-        //
+        return Usuario::where('rol', 'jugador')->get();
     }
+
 
     /**
      * Show the form for creating a new resource.
@@ -55,22 +56,23 @@ class UsuarioController extends Controller
 
 
      public function update(Request $request, Usuario $usuario)
-     {
-         // Solo el mismo usuario puede actualizar su perfil
-         if (auth()->id() !== $usuario->id) {
-             return response()->json(['message' => 'No autorizado'], 403);
-         }
-     
-         $request->validate([
-             'avatar' => 'required|string'
-         ]);
-     
-         $usuario->update([
-             'avatar' => $request->avatar
-         ]);
-     
-         return response()->json($usuario);
-     }
+    {
+        // Permitir si es admin o el mismo usuario
+        if (auth()->id() !== $usuario->id && auth()->user()->rol !== 'admin') {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $request->validate([
+            'nombre' => 'nullable|string|max:100',
+            'email' => 'nullable|email|unique:usuarios,email,' . $usuario->id,
+            'telefono' => 'nullable|string|max:20',
+        ]);
+
+        $usuario->update($request->only(['nombre', 'email', 'telefono']));
+
+        return response()->json($usuario);
+    }
+
      
 
 
@@ -80,6 +82,14 @@ class UsuarioController extends Controller
      */
     public function destroy(Usuario $usuario)
     {
-        //
+        // Solo un admin puede eliminar usuarios
+        if (auth()->user()->rol !== 'admin') {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $usuario->delete();
+
+        return response()->json(['message' => 'Usuario eliminado']);
     }
+
 }

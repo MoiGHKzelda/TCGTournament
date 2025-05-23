@@ -11,13 +11,16 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('torneo_jugadors', function (Blueprint $table) {
+        Schema::create('torneo_jugadorss', function (Blueprint $table) {
             $table->id();
             $table->foreignId('usuario_id')->constrained('usuarios')->onDelete('cascade');
             $table->foreignId('torneo_id')->constrained('torneos')->onDelete('cascade');
-            $table->integer('puntos')->default(0);
-            $table->boolean('eliminado')->default(false);
+            $table->timestamps();
+        
+            $table->foreign('usuario_id')->references('id')->on('usuarios')->onDelete('cascade');
+            $table->foreign('torneo_id')->references('id')->on('torneos')->onDelete('cascade');
         });
+        
     }
 
 

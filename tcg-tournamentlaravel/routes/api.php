@@ -44,11 +44,15 @@ Route::post('/register', function (Request $request) {
     ]);
 
     return response()->json([
-        'message' => 'Usuario registrado correctamente',
-        'usuario' => $usuario
-    ], 201);
-});
-Route::post('/login', [AuthController::class, 'login']);
+                'message' => 'Usuario registrado correctamente',
+                'usuario' => $usuario
+            ], 201);
+    });
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::get('/user/torneos', function (Request $request) {
+        return $request->user()->torneosInscritos;
+    });
+
 
 /*
 |--------------------------------------------------------------------------
@@ -68,6 +72,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/torneos/{id}/recompensas', [CartaRecompensaController::class, 'asociarCarta']);
     Route::post('/torneos/{id}/inscribirse', [TorneoJugadorController::class, 'inscribirse']);
     Route::get('/torneos/{id}/jugadores', [TorneoJugadorController::class, 'listarPorTorneo']);
+    Route::post('/torneos/{id}/desinscribirse', [TorneoJugadorController::class, 'desinscribirse']);
+    
 
     // CRUD de modelos
     Route::apiResource('usuarios', UsuarioController::class);
@@ -79,5 +85,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('mensajes', MensajeForoController::class);
     Route::apiResource('anuncios', AnuncioController::class);
     Route::apiResource('recompensas', CartaRecompensaController::class);
+    
 });
 
