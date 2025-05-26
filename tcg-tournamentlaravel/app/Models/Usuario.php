@@ -22,8 +22,9 @@ class Usuario extends Authenticatable
 
     public function perfil()
     {
-        return $this->hasOne(Perfil::class);
+        return $this->hasOne(Perfil::class, 'usuario_id');
     }
+
     public function torneosOrganizados()
     {
         return $this->hasMany(Torneo::class, 'organizador_id');
@@ -32,7 +33,6 @@ class Usuario extends Authenticatable
     {
         return $this->belongsToMany(Torneo::class, 'torneo_jugadors', 'usuario_id', 'torneo_id');
     }
-
     public function partidasComoJugador1()
     {
         return $this->hasMany(Partida::class, 'jugador1_id');

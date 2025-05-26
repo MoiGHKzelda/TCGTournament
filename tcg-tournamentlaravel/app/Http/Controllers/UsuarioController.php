@@ -55,16 +55,31 @@ class UsuarioController extends Controller
      */
 
 
-     public function update(Request $request, Usuario $usuario)
+    // app/Http/Controllers/UsuarioController.php
+
+    public function update(Request $request, $id)
     {
-        // Permitir si es admin o el mismo usuario
-        if (auth()->id() !== $usuario->id && auth()->user()->rol !== 'admin') {
+        $usuario = Usuario::findOrFail($id);
+
+        // Solo el usuario puede cambiar su avatar
+        if (auth()->id() === $usuario->id) {
+            $request->validate([
+                'avatar' => 'required|string'
+            ]);
+            $usuario->avatar = $request->avatar;
+            $usuario->save();
+
+            return response()->json($usuario);
+        }
+
+        // Si no es el mismo usuario, asumimos que es admin y permitimos otros campos
+        if (auth()->user()->rol !== 'admin') {
             return response()->json(['message' => 'No autorizado'], 403);
         }
 
         $request->validate([
-            'nombre' => 'nullable|string|max:100',
-            'email' => 'nullable|email|unique:usuarios,email,' . $usuario->id,
+            'nombre' => 'required|string|max:100',
+            'email' => 'required|email',
             'telefono' => 'nullable|string|max:20',
         ]);
 
@@ -72,9 +87,6 @@ class UsuarioController extends Controller
 
         return response()->json($usuario);
     }
-
-     
-
 
 
     /**
@@ -91,5 +103,4 @@ class UsuarioController extends Controller
 
         return response()->json(['message' => 'Usuario eliminado']);
     }
-
 }

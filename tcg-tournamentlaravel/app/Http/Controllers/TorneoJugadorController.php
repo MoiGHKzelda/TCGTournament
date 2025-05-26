@@ -4,80 +4,32 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\TorneoJugador;
-use App\Http\Requests\StoreTorneoJugadorRequest;
-use App\Http\Requests\UpdateTorneoJugadorRequest;
 use App\Models\Torneo;
 
 class TorneoJugadorController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreTorneoJugadorRequest $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(TorneoJugador $torneoJugador)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(TorneoJugador $torneoJugador)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateTorneoJugadorRequest $request, TorneoJugador $torneoJugador)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(TorneoJugador $torneoJugador)
-    {
-        //
-    }
-
     public function inscribirse($id)
     {
         $usuario = auth()->user();
 
+        // Validar si ya está inscrito
         $existe = TorneoJugador::where('usuario_id', $usuario->id)
-                    ->where('torneo_id', $id)
-                    ->exists();
+            ->where('torneo_id', $id)
+            ->exists();
 
         if ($existe) {
             return response()->json(['message' => 'Ya inscrito'], 409);
         }
 
+        // Validar si hay plazas disponibles
+        $torneo = Torneo::findOrFail($id);
+        $inscritos = TorneoJugador::where('torneo_id', $id)->count();
+
+        if ($inscritos >= $torneo->max_jugadores) {
+            return response()->json(['message' => 'No hay plazas disponibles'], 403);
+        }
+
+        // Crear inscripción
         TorneoJugador::create([
             'usuario_id' => $usuario->id,
             'torneo_id' => $id
@@ -103,6 +55,10 @@ class TorneoJugadorController extends Controller
         return response()->json(['message' => 'Desinscripción correcta']);
     }
 
-
+    public function listarPorTorneo($id)
+    {
+        $jugadores = TorneoJugador::where('torneo_id', $id)->with('usuario')->get();
+        return response()->json($jugadores);
+    }
 
 }

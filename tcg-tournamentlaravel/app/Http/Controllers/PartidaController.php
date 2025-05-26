@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Partida;
 use App\Http\Requests\StorePartidaRequest;
 use App\Http\Requests\UpdatePartidaRequest;
+use Illuminate\Http\Request;
 
 class PartidaController extends Controller
 {
@@ -63,4 +64,30 @@ class PartidaController extends Controller
     {
         //
     }
+
+    // Obtener partidas de una ronda--
+    public function partidasPorTorneoYRonda($torneoId, $ronda)
+    {
+        return Partida::with(['jugador1', 'jugador2', 'ganador'])
+            ->where('torneo_id', $torneoId)
+            ->where('ronda', $ronda)
+            ->get();
+    }
+
+    // Guardar ganador de una partida
+    public function asignarGanador(Request $request, $id)
+    {
+        $partida = Partida::findOrFail($id);
+
+        $request->validate([
+            'ganador_id' => 'required|exists:usuarios,id'
+        ]);
+
+        $partida->ganador_id = $request->ganador_id;
+        $partida->resultado = $request->resultado ?? null;
+        $partida->save();
+
+        return response()->json(['message' => 'Ganador asignado correctamente']);
+    }
+
 }

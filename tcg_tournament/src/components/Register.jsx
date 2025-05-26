@@ -11,16 +11,32 @@ const Register = () => {
   const [telefono, setTelefono] = useState('');
   const [dni, setDni] = useState('');
   const [mensaje, setMensaje] = useState('');
+  const [error, setError] = useState('');
   const navigate = useNavigate();
+
+  const validarTelefono = (numero) => /^[0-9]{9}$/.test(numero);
+  const validarDni = (valor) => /^[0-9]{8}[A-Za-z]$/.test(valor);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!validarTelefono(telefono)) {
+      setError('El teléfono debe tener exactamente 9 dígitos.');
+      return;
+    }
+
+    if (!validarDni(dni)) {
+      setError('El DNI debe tener 8 números seguidos de una letra. Ej: 12345678A');
+      return;
+    }
+
     try {
       await postRegister({ nombre, email, password, telefono, dni });
       setMensaje('Usuario registrado con éxito');
+      setError('');
       setTimeout(() => navigate('/'), 1500);
     } catch (error) {
-      setMensaje(error.message);
+      setError(error.message || 'Error al registrar');
     }
   };
 
@@ -31,7 +47,8 @@ const Register = () => {
           <Card className="shadow-lg border border-danger rounded-4 px-3 py-4" style={{ backgroundColor: '#1c1c1c', color: '#F8F4E3' }}>
             <Card.Body>
               <h2 className="text-center mb-4" style={{ fontFamily: 'Cinzel, serif' }}>Registro</h2>
-              {mensaje && <Alert variant="info">{mensaje}</Alert>}
+              {mensaje && <Alert variant="success">{mensaje}</Alert>}
+              {error && <Alert variant="danger">{error}</Alert>}
               <Form onSubmit={handleSubmit}>
                 <Form.Group className="mb-3">
                   <Form.Label>Nombre</Form.Label>

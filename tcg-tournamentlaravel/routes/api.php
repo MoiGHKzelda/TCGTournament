@@ -12,6 +12,7 @@ use App\Http\Controllers\HiloForoController;
 use App\Http\Controllers\MensajeForoController;
 use App\Http\Controllers\AnuncioController;
 use App\Http\Controllers\CartaRecompensaController;
+use App\Http\Controllers\GestionTorneoController;
 use App\Models\Usuario;
 
 /*
@@ -40,8 +41,10 @@ Route::post('/register', function (Request $request) {
         'password' => Hash::make($request->password),
         'telefono' => $request->telefono,
         'dni' => $request->dni,
-        'rol' => 'jugador'
+        'rol' => 'jugador',
+        'avatar' => 'avatar_1.png'
     ]);
+    
 
     return response()->json([
                 'message' => 'Usuario registrado correctamente',
@@ -49,9 +52,7 @@ Route::post('/register', function (Request $request) {
             ], 201);
     });
     Route::post('/login', [AuthController::class, 'login']);
-    Route::get('/user/torneos', function (Request $request) {
-        return $request->user()->torneosInscritos;
-    });
+    
 
 
 /*
@@ -62,20 +63,31 @@ Route::post('/register', function (Request $request) {
 
 Route::middleware('auth:sanctum')->group(function () {
 
-    // Obtener usuario autenticado
-    Route::get('/user', function (Request $request) {
-        return $request->user();
-    });
+    // Usuario autenticado
+    Route::get('/user', fn(Request $request) => $request->user());
+    Route::get('/user/torneos', fn(Request $request) => $request->user()->torneosInscritos);
 
-    // Funciones personalizadas
+    // Funciones de torneo
     Route::get('/torneos/{id}/recompensas', [CartaRecompensaController::class, 'porTorneo']);
     Route::post('/torneos/{id}/recompensas', [CartaRecompensaController::class, 'asociarCarta']);
+
     Route::post('/torneos/{id}/inscribirse', [TorneoJugadorController::class, 'inscribirse']);
-    Route::get('/torneos/{id}/jugadores', [TorneoJugadorController::class, 'listarPorTorneo']);
     Route::post('/torneos/{id}/desinscribirse', [TorneoJugadorController::class, 'desinscribirse']);
+    Route::get('/torneos/{id}/jugadores', [TorneoJugadorController::class, 'listarPorTorneo']);
+
+    Route::get('/torneos/{id}/partidas/ronda/{ronda}', [PartidaController::class, 'partidasPorTorneoYRonda']);
+    Route::put('/partidas/{id}/ganador', [PartidaController::class, 'asignarGanador']);
+    
+    // TORNEO: iniciar, pasar ronda, guardar ganadores, etc.
+    Route::post('/torneos/{id}/iniciar', [TorneoController::class, 'iniciarTorneo']);
+    Route::post('/torneos/{id}/pasar-ronda', [TorneoController::class, 'pasarRonda']);
+    Route::post('/torneos/{id}/guardar-ganadores', [TorneoController::class, 'guardarGanadores']);
+    Route::get('/torneos/{id}/partidas-actuales', [TorneoController::class, 'partidasActuales']);
+    Route::post('/torneos/{id}/finalizar', [TorneoController::class, 'finalizarTorneo']);
+    Route::post('/torneos/{id}/ganador', [TorneoController::class, 'asignarGanador']);
     
 
-    // CRUD de modelos
+    // CRUD de recursos
     Route::apiResource('usuarios', UsuarioController::class);
     Route::apiResource('perfiles', PerfilController::class);
     Route::apiResource('torneos', TorneoController::class);
@@ -85,6 +97,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('mensajes', MensajeForoController::class);
     Route::apiResource('anuncios', AnuncioController::class);
     Route::apiResource('recompensas', CartaRecompensaController::class);
-    
 });
+
 

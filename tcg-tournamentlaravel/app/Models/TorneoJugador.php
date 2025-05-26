@@ -9,7 +9,7 @@ class TorneoJugador extends Model
 {
     use HasFactory;
 
-    protected $table = 'torneo_jugadors';
+    protected $table = 'torneo_jugadors'; 
 
     protected $fillable = [
         'usuario_id',
@@ -18,7 +18,7 @@ class TorneoJugador extends Model
         'eliminado'
     ];
 
-    public $timestamps = false;
+    public $timestamps = false; 
 
     public function usuario()
     {

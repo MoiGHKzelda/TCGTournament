@@ -15,7 +15,7 @@ class Torneo extends Model
         'nombre',
         'descripcion',
         'fecha',
-        'hora',
+        'hora', 
         'formato',
         'max_jugadores',
         'estado',

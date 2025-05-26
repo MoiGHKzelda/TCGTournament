@@ -62,7 +62,7 @@ export const apiGet = async (url) => {
 };
 
 
-export const apiPost = async (url, body) => {
+export const apiPost = async (url, body = {}) => {
   const res = await fetch(`${API_URL}/api/${url}`, {
     method: 'POST',
     headers: {
@@ -77,6 +77,7 @@ export const apiPost = async (url, body) => {
   if (!res.ok) throw new Error(data.message || 'Error en POST');
   return data;
 };
+
 
 
 export const apiDelete = async (url) => {
@@ -95,19 +96,23 @@ export const apiDelete = async (url) => {
 
 
 export const apiPut = async (url, body) => {
+  const token = localStorage.getItem('token');
   const res = await fetch(`${API_URL}/api/${url}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('token')}`,
-      'Accept': 'application/json',
+      'Authorization': `Bearer ${token}`
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify(body)
   });
 
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Error al actualizar');
-  return data;
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(errorData.message || 'Error en la petición PUT');
+  }
+
+  return await res.json();
 };
+
 
 

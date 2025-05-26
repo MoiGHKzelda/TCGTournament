@@ -6,7 +6,7 @@ import {
 } from 'react-bootstrap';
 import TorneoLayout from '../User/TorneoLayout';
 import FormularioTorneo from './FormularioTorneo';
-import { apiGet, apiDelete, apiPut } from '../../services/api';
+import { apiGet, apiDelete, apiPut, apiPost } from '../../services/api';
 import MdlRecompensa from './MdlRecompensa';
 
 const AdminDashboard = () => {
@@ -21,6 +21,11 @@ const AdminDashboard = () => {
   const [usuarios, setUsuarios] = useState([]);
   const [showEditarUsuario, setShowEditarUsuario] = useState(false);
   const [usuarioEditando, setUsuarioEditando] = useState(null);
+  const [mostrarModalRonda, setMostrarModalRonda] = useState(false);
+  const [partidasRonda, setPartidasRonda] = useState([]);
+  const [ganadoresSeleccionados, setGanadoresSeleccionados] = useState({});
+  const [jugadoresPorTorneo, setJugadoresPorTorneo] = useState({});
+
 
   const abrirFormulario = () => setMostrarFormulario(true);
   const cerrarFormulario = () => {
@@ -56,20 +61,68 @@ const AdminDashboard = () => {
     }
   };
 
-  const eliminarRecompensa = async (id) => {
-    if (confirm('¿Eliminar esta recompensa?')) {
-      try {
-        await apiDelete(`recompensas/${id}`);
-        setRecompensas((prev) => prev.filter((r) => r.id !== id));
-        setMensajeToast('Recompensa eliminada.');
-        setMostrarToast(true);
-      } catch {
-        setMensajeToast('❌ Error al eliminar la recompensa');
-        setMostrarToast(true);
-      }
+  const iniciarTorneo = async (id) => {
+    if (!confirm('¿Estás seguro de que deseas iniciar este torneo?')) return;
+
+    try {
+      const res = await apiPost(`torneos/${id}/iniciar`);
+      alert(res.message || 'Torneo iniciado');
+      const nuevos = await apiGet('torneos');
+      setTorneos(nuevos);
+    } catch (error) {
+      alert(error.message || '❌ Error al iniciar el torneo');
     }
   };
 
+  const pasarRonda = async (id) => {
+    try {
+      const partidas = await apiGet(`torneos/${id}/partidas-actuales`);
+      setPartidasRonda(partidas);
+      setTorneoSeleccionado(torneos.find(t => t.id === id));
+      setMostrarModalRonda(true);
+    } catch (e) {
+      setMensajeToast('❌ Error al cargar partidas');
+      setMostrarToast(true);
+    }
+  };
+  const finalizarTorneo = async (id) => {
+    if (!confirm('¿Estás seguro de que deseas finalizar este torneo?')) return;
+  
+    try {
+      const res = await apiPost(`torneos/${id}/finalizar`);
+      alert(res.message || 'Torneo finalizado');
+      const actualizados = await apiGet('torneos');
+      setTorneos(actualizados);
+    } catch (error) {
+      alert(error.message || '❌ Error al finalizar el torneo');
+    }
+  };
+  
+
+  const handleConfirmarGanadores = async () => {
+    const faltan = partidasRonda.some(p => !ganadoresSeleccionados[p.id]);
+    if (faltan) {
+      alert('Debes seleccionar un ganador para todas las partidas.');
+      return;
+    }
+  
+    try {
+      await apiPost(`torneos/${torneoSeleccionado.id}/guardar-ganadores`, {
+        ganadores: ganadoresSeleccionados
+      });
+      setMensajeToast('Ganadores registrados y ronda actualizada');
+      setMostrarToast(true);
+      setMostrarModalRonda(false);
+  
+      // Actualizar lista de torneos
+      const nuevos = await apiGet('torneos');
+      setTorneos(nuevos);
+    } catch (e) {
+      setMensajeToast('Error al guardar ganadores');
+      setMostrarToast(true);
+    }
+  };
+  
   const cargarRecompensas = async () => {
     try {
       const recompensasAll = [];
@@ -92,6 +145,29 @@ const AdminDashboard = () => {
     }
   };
 
+  const cargarJugadoresPorTorneo = async () => {
+    const conteos = {};
+    for (const torneo of torneos) {
+      const jugadores = await apiGet(`torneos/${torneo.id}/jugadores`);
+      conteos[torneo.id] = jugadores.length;
+    }
+    setJugadoresPorTorneo(conteos);
+  };
+
+  const cargarPartidasRonda = async (torneoId) => {
+    try {
+      const partidas = await apiGet(`torneos/${torneoId}/partidas-actuales`);
+      setPartidasRonda(partidas);
+      setTorneoSeleccionado(torneos.find(t => t.id === torneoId));
+      setMostrarModalRonda(true);
+    } catch (e) {
+      setMensajeToast('❌ Error al cargar partidas');
+      setMostrarToast(true);
+    }
+  };
+  
+  
+
   const editarUsuario = async () => {
     try {
       await apiPut(`usuarios/${usuarioEditando.id}`, usuarioEditando);
@@ -104,6 +180,19 @@ const AdminDashboard = () => {
       setMostrarToast(true);
     }
   };
+  const eliminarRecompensa = async (id) => {
+    if (confirm('¿Eliminar esta recompensa?')) {
+      try {
+        await apiDelete(`recompensas/${id}`);
+        setRecompensas(prev => prev.filter(r => r.id !== id));
+        setMensajeToast('Recompensa eliminada.');
+        setMostrarToast(true);
+      } catch {
+        setMensajeToast('❌ Error al eliminar la recompensa');
+        setMostrarToast(true);
+      }
+    }
+  };  
 
   const eliminarUsuario = async (id) => {
     if (confirm('¿Eliminar este usuario?')) {
@@ -121,107 +210,181 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     apiGet('torneos')
-      .then(setTorneos)
-      .catch(() => setTorneos([]));
+    .then(data => {
+      const ordenados = [...data].sort((a, b) => new Date(b.id) - new Date(a.id));
+      setTorneos(ordenados);
+    })
+    .catch(() => setTorneos([]));
+
     cargarUsuarios();
   }, []);
 
   useEffect(() => {
-    if (torneos.length > 0) cargarRecompensas();
+    if (torneos.length > 0) {
+      cargarRecompensas();
+      cargarJugadoresPorTorneo();
+    }
   }, [torneos]);
+
+
 
   return (
     <TorneoLayout>
-      <Container fluid className="py-4" style={{ backgroundColor: '#121212', minHeight: '100vh' }}>
+      <Container fluid className="py-4" style={{ backgroundColor: '#121212', minHeight: '100vh', overflowX: 'hidden', paddingLeft: '15px', paddingRight: '15px', width: '100%',}}>
         <h2 className="mb-5 text-center" style={{ fontFamily: 'Cinzel, serif', color: '#F8F4E3' }}>
           Gestión de Torneos
         </h2>
         <Row>
           {/* Torneos */}
-          <Col md={8}>
+          <Col md={8} style={{ maxHeight: '80vh', overflowY: 'auto', overflowX: 'hidden' }}>
             <div className="text-end mb-4">
-              <Button onClick={abrirFormulario} style={{ backgroundColor: '#B22222', border: 'none', color: '#FFD700' }}>
+              <Button
+                onClick={abrirFormulario}
+                style={{ backgroundColor: '#B22222', border: 'none', color: '#FFD700' }}
+              >
                 + Añadir Torneo
               </Button>
             </div>
-            <Row className="justify-content-start">
-              {torneos.map((torneo) => {
-                const recompensasTorneo = recompensas.filter(r => r.torneo_id === torneo.id);
-                return (
-                  <Col md={12} key={torneo.id} className="mb-4">
-                    <Card style={{ backgroundColor: '#1c1c1c', color: '#F8F4E3', border: '1px solid #FFD700' }}>
-                      <Card.Body>
-                        <Card.Title className="text-center">{torneo.nombre}</Card.Title>
-                        <Card.Subtitle className="mb-2 text-white text-center">
-                          {new Date(torneo.fecha).toLocaleDateString('es-ES')} — {torneo.formato}
-                        </Card.Subtitle>
-                        <Card.Text className="text-center">{torneo.descripcion}</Card.Text>
-                        <ListGroup className="mb-2">
-                          {recompensasTorneo.map((r) => (
-                            <ListGroup.Item key={r.id} style={{
-                              backgroundColor: '#2c2c2c',
-                              border: '1px solid #FFD700',
-                              color: '#FFD700',
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center'
-                            }}>
-                              {r.puesto}º - {r.nombre_carta} ({r.rareza})
-                              <Button size="sm" variant="danger" onClick={() => eliminarRecompensa(r.id)}>Eliminar</Button>
-                            </ListGroup.Item>
-                          ))}
-                        </ListGroup>
-                        <div className="d-flex flex-wrap justify-content-center gap-2 mt-3">
-                          <Button variant="outline-warning" size="sm">Iniciar Torneo</Button>
-                          <Button variant="outline-light" size="sm">Pasar Ronda</Button>
-                          <Button variant="outline-info" size="sm" onClick={() => {
-                            setTorneoEditando(torneo);
-                            setMostrarFormulario(true);
-                          }}>
-                            Editar
-                          </Button>
-                          <Button variant="outline-danger" size="sm" onClick={() => eliminarTorneo(torneo.id)}>
-                            Eliminar
-                          </Button>
-                          <Button variant="outline-success" size="sm" onClick={() => {
-                            setTorneoSeleccionado(torneo);
-                            setShowRecompensa(true);
-                          }} disabled={recompensasTorneo.length >= 3}>
-                            Añadir Recompensa
-                          </Button>
-                        </div>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-                );
-              })}
-            </Row>
+            
+            <div style={{ maxHeight: '80vh', overflowY: 'auto', paddingRight: '10px' }}>
+              <Row className="justify-content-start">
+                {torneos.map((torneo) => {
+                  const recompensasTorneo = recompensas.filter(r => r.torneo_id === torneo.id);
+                  return (
+                    <Col md={12} key={torneo.id} className="mb-4">
+                      <Card style={{ backgroundColor: '#1c1c1c', color: '#F8F4E3', border: '1px solid #FFD700' }}>
+                        <Card.Body>
+                          <Card.Title className="text-center">{torneo.nombre}</Card.Title>
+                          <Card.Subtitle className="mb-2 text-white text-center">
+                            {new Date(torneo.fecha).toLocaleDateString('es-ES')} — {torneo.formato}
+                          </Card.Subtitle>
+                          <Card.Text className="text-center">{torneo.descripcion}</Card.Text>
+                          <ListGroup className="mb-2">
+                            {recompensasTorneo.map((r) => (
+                              <ListGroup.Item key={r.id} style={{
+                                backgroundColor: '#2c2c2c',
+                                border: '1px solid #FFD700',
+                                color: '#FFD700',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center'
+                              }}>
+                                {r.puesto}º - {r.nombre_carta} ({r.rareza})
+                                {torneo.estado === 'inscripcion' && (
+                                  <Button size="sm" variant="danger" onClick={() => eliminarRecompensa(r.id)}>Eliminar</Button>
+                                )}
+                              </ListGroup.Item>
+                            ))}
+                          </ListGroup>
+                          <div className="d-flex flex-wrap justify-content-center gap-2 mt-3">
+                            {torneo.estado === 'inscripcion' && (
+                              <Button
+                                variant="outline-warning"
+                                size="sm"
+                                onClick={() => iniciarTorneo(torneo.id)}
+                                disabled={(jugadoresPorTorneo[torneo.id] || 0) < 2}
+                              >
+                                Iniciar Torneo
+                              </Button>
+                            )}
+
+                            {torneo.estado === 'activo' && (
+                              <>
+                                <Button
+                                  variant="outline-light"
+                                  size="sm"
+                                  onClick={() => {
+                                    setTorneoSeleccionado(torneo);
+                                    cargarPartidasRonda(torneo.id);
+                                  }}
+                                >
+                                  Pasar Ronda
+                                </Button>
+                                <Button
+                                  variant="outline-danger"
+                                  size="sm"
+                                  onClick={() => finalizarTorneo(torneo.id)}
+                                >
+                                  Finalizar Torneo
+                                </Button>
+                                <Button
+                                  variant="outline-success"
+                                  size="sm"
+                                  onClick={() => {
+                                    const ganadorId = prompt('Ingresa el ID del jugador ganador:');
+                                    if (ganadorId) asignarGanadorDelTorneo(torneo.id, ganadorId);
+                                  }}
+                                >
+                                  Asignar Ganador del Torneo
+                                </Button>
+                              </>
+                            )}
+
+                            <Button
+                              variant="outline-info"
+                              size="sm"
+                              onClick={() => {
+                                setTorneoEditando(torneo);
+                                setMostrarFormulario(true);
+                              }}
+                            >
+                              Editar
+                            </Button>
+                            <Button
+                              variant="outline-danger"
+                              size="sm"
+                              onClick={() => eliminarTorneo(torneo.id)}
+                            >
+                              Eliminar
+                            </Button>
+                            <Button
+                              variant="outline-success"
+                              size="sm"
+                              onClick={() => {
+                                setTorneoSeleccionado(torneo);
+                                setShowRecompensa(true);
+                              }}
+                              disabled={recompensasTorneo.length >= 3 || torneo.estado !== 'inscripcion'}
+                            >
+                              Añadir Recompensa
+                            </Button>
+                          </div>
+                        </Card.Body>
+                      </Card>
+                    </Col>
+                  );
+                })}
+              </Row>
+            </div>
           </Col>
 
           {/* Usuarios */}
-          <Col md={4}>
+          <Col md={4} style={{ maxHeight: '80vh', overflowY: 'auto', overflowX: 'hidden' }}>
             <h5 style={{ color: '#FFD700' }}>Gestión de Jugadores</h5>
-            <ListGroup>
-              {usuarios.map((u) => (
-                <ListGroup.Item key={u.id} style={{ backgroundColor: '#1c1c1c', color: '#F8F4E3' }}>
-                  <strong>{u.nombre}</strong><br />
-                  <span style={{ fontSize: '0.85rem' }}>{u.email}</span>
-                  <div className="mt-2 d-flex gap-2">
-                    <Button variant="info" size="sm" onClick={() => {
-                      setUsuarioEditando(u);
-                      setShowEditarUsuario(true);
-                    }}>
-                      Editar
-                    </Button>
-                    <Button variant="danger" size="sm" onClick={() => eliminarUsuario(u.id)}>
-                      Eliminar
-                    </Button>
-                  </div>
-                </ListGroup.Item>
-              ))}
-            </ListGroup>
+            <div style={{ maxHeight: '80vh', overflowY: 'auto', paddingRight: '10px' }}>
+              <ListGroup>
+                {usuarios.map((u) => (
+                  <ListGroup.Item key={u.id} style={{ backgroundColor: '#1c1c1c', color: '#F8F4E3' }}>
+                    <strong>{u.nombre}</strong><br />
+                    <span style={{ fontSize: '0.85rem' }}>{u.email}</span>
+                    <div className="mt-2 d-flex gap-2">
+                      <Button variant="info" size="sm" onClick={() => {
+                        setUsuarioEditando(u);
+                        setShowEditarUsuario(true);
+                      }}>
+                        Editar
+                      </Button>
+                      <Button variant="danger" size="sm" onClick={() => eliminarUsuario(u.id)}>
+                        Eliminar
+                      </Button>
+                    </div>
+                  </ListGroup.Item>
+                ))}
+              </ListGroup>
+            </div>
           </Col>
         </Row>
+
 
         <FormularioTorneo
           show={mostrarFormulario}
@@ -276,6 +439,51 @@ const AdminDashboard = () => {
             </Form>
           </Modal.Body>
         </Modal>
+
+        <Modal show={mostrarModalRonda} onHide={() => setMostrarModalRonda(false)} centered size="lg">
+          <Modal.Header closeButton style={{ backgroundColor: '#1c1c1c', color: '#FFD700' }}>
+            <Modal.Title>Gestión de Ronda</Modal.Title>
+          </Modal.Header>
+          <Modal.Body style={{ backgroundColor: '#1c1c1c', color: '#F8F4E3' }}>
+            {partidasRonda.length === 0 ? (
+              <p>No hay partidas en esta ronda.</p>
+            ) : (
+              partidasRonda.map((partida, idx) => (
+                <Card key={idx} className="mb-3" style={{ backgroundColor: '#282828', border: '1px solid #FFD700' }}>
+                  <Card.Body className="d-flex justify-content-around align-items-center">
+                    <Button
+                      variant={ganadoresSeleccionados[partida.id] === partida.jugador1.id ? 'success' : 'outline-light'}
+                      onClick={() =>
+                        setGanadoresSeleccionados(prev => ({ ...prev, [partida.id]: partida.jugador1.id }))
+                      }
+                    >
+                      {partida.jugador1.nombre}
+                    </Button>
+
+                    <span>VS</span>
+
+                    {partida.jugador2 ? (
+                      <Button
+                        variant={ganadoresSeleccionados[partida.id] === partida.jugador2.id ? 'success' : 'outline-light'}
+                        onClick={() =>
+                          setGanadoresSeleccionados(prev => ({ ...prev, [partida.id]: partida.jugador2.id }))
+                        }
+                      >
+                        {partida.jugador2.nombre}
+                      </Button>
+                    ) : (
+                      <span className="text-warning">Pase automático</span>
+                    )}
+                  </Card.Body>
+                </Card>
+              ))
+            )}
+            <Button className="mt-3" variant="success" onClick={handleConfirmarGanadores}>
+              Confirmar Ganadores
+            </Button>
+          </Modal.Body>
+        </Modal>
+
 
         <ToastContainer position="bottom-end" className="p-3">
           <Toast bg="success" onClose={() => setMostrarToast(false)} show={mostrarToast} delay={3000} autohide>

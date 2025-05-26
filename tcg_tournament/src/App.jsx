@@ -20,7 +20,6 @@ const App = () => {
       }
       return null;
     }
-
     return children;
   };
 
@@ -31,39 +30,41 @@ const App = () => {
   };
 
   return (
-    <>
+    <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', backgroundColor: '#121212' }}>
       <Navbar />
-      <Routes>
-        <Route path="/" element={
-          <PublicRoute>
-            <Login />
-          </PublicRoute>
-        } />
-        <Route path="/register" element={
-          <PublicRoute>
-            <Register />
-          </PublicRoute>
-        } />
-        <Route path="/admin/dashboard" element={
-          <PrivateRoute rol="admin">
-            <AdminDashboard />
-          </PrivateRoute>
-        } />
-        <Route path="/usuario/inicio" element={
-          <PrivateRoute rol="jugador">
-            <InicioUsuario />
-          </PrivateRoute>
-        } />
-        <Route
-          path="/usuario/foro"
-          element={
-            <PrivateRoute rol="jugador">
-              <ForoGeneral />
+      <div style={{ height: 'calc(100vh - 80px)', overflow: 'hidden' }}>
+        <Routes>
+          <Route path="/" element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          } />
+          <Route path="/register" element={
+            <PublicRoute>
+              <Register />
+            </PublicRoute>
+          } />
+          <Route path="/admin/dashboard" element={
+            <PrivateRoute rol="admin">
+              <AdminDashboard />
             </PrivateRoute>
-          }
-        />
-      </Routes>
-    </>
+          } />
+          <Route path="/usuario/inicio" element={
+            <PrivateRoute rol="jugador">
+              <InicioUsuario />
+            </PrivateRoute>
+          } />
+          <Route
+            path="/usuario/foro"
+            element={
+              <PrivateRoute rol="jugador">
+                <ForoGeneral />
+              </PrivateRoute>
+            }
+          />
+        </Routes>
+      </div>
+    </div>
   );
 };
 

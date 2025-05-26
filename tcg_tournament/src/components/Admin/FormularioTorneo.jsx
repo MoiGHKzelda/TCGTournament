@@ -1,4 +1,3 @@
-// ✅ FormularioTorneo.jsx
 import React, { useState, useEffect } from 'react';
 import { Button, Form, Modal } from 'react-bootstrap';
 import { apiPost, apiPut } from '../../services/api';
@@ -12,18 +11,9 @@ const FormularioTorneo = ({ show, handleClose, onSubmit, modo = 'crear', torneo 
     formato: '',
     max_jugadores: 8,
   });
-
+  
   useEffect(() => {
-    if (torneo) {
-      setFormData({
-        nombre: torneo.nombre || '',
-        descripcion: torneo.descripcion || '',
-        fecha: torneo.fecha || '',
-        hora: torneo.hora || '',
-        formato: torneo.formato || '',
-        max_jugadores: torneo.max_jugadores || 8,
-      });
-    } else {
+    if (show && !torneo) {
       setFormData({
         nombre: '',
         descripcion: '',
@@ -33,7 +23,8 @@ const FormularioTorneo = ({ show, handleClose, onSubmit, modo = 'crear', torneo 
         max_jugadores: 8,
       });
     }
-  }, [torneo]);
+  }, [show, torneo]);
+  
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -44,6 +35,7 @@ const FormularioTorneo = ({ show, handleClose, onSubmit, modo = 'crear', torneo 
     try {
       let response;
       if (modo === 'editar' && torneo?.id) {
+        console.log('formData enviado:', formData);
         response = await apiPut(`torneos/${torneo.id}`, formData);
       } else {
         response = await apiPost('torneos', formData);
@@ -73,7 +65,7 @@ const FormularioTorneo = ({ show, handleClose, onSubmit, modo = 'crear', torneo 
           </Form.Group>
           <Form.Group className="mb-3">
             <Form.Label>Fecha</Form.Label>
-            <Form.Control name="fecha" type="date" value={formData.fecha} onChange={handleChange} required />
+            <Form.Control name="fecha" type="date" value={formData.fecha} onChange={handleChange} min={new Date().toISOString().split('T')[0]} required/>
           </Form.Group>
           <Form.Group className="mb-3">
             <Form.Label>Hora</Form.Label>

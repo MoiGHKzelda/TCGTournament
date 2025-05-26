@@ -11,15 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('carta_recompensas', function (Blueprint $table) {
-            $table->unsignedTinyInteger('puesto')->after('descripcion');
+        Schema::table('torneos', function (Blueprint $table) {
+            $table->integer('ronda_actual')->default(1)->after('estado');
         });
     }
 
+
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
-        Schema::table('carta_recompensas', function (Blueprint $table) {
-            $table->dropColumn('puesto');
+        Schema::table('torneos', function (Blueprint $table) {
+            //
         });
     }
 };

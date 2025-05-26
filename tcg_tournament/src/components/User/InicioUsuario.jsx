@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Row, Col, Card, Button, Image, Container, Modal, Spinner } from 'react-bootstrap';
-import { apiGet, apiPut } from '../../services/api';
+import { Row, Col, Card, Button, Image, Container, Modal } from 'react-bootstrap';
+import { apiGet, apiPut, apiPost } from '../../services/api';
 import TorneoLayout from './TorneoLayout';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -15,47 +15,97 @@ const InicioUsuario = () => {
   const [usuario, setUsuario] = useState(null);
   const [perfil, setPerfil] = useState(null);
   const [torneos, setTorneos] = useState([]);
+  const [inscripciones, setInscripciones] = useState([]);
   const [recompensas, setRecompensas] = useState([]);
+  const [jugadoresPorTorneo, setJugadoresPorTorneo] = useState({});
   const [showModal, setShowModal] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
   const [torneoSeleccionado, setTorneoSeleccionado] = useState(null);
   const [cartaSeleccionada, setCartaSeleccionada] = useState(null);
   const [mostrarModalCarta, setMostrarModalCarta] = useState(false);
+  const [partidasUsuario, setPartidasUsuario] = useState([]);
+
   const navigate = useNavigate();
   const { user, login, token } = useAuth();
 
-  useEffect(() => {
-    apiGet('user').then(setUsuario).catch(() => setUsuario(null));
-    apiGet('torneos').then(setTorneos).catch(() => setTorneos([]));
-  }, []);
+  // 1. Cargar usuario y torneos al montar el componente
+useEffect(() => {
+  apiGet('user').then(setUsuario).catch(() => setUsuario(null));
+  apiGet('torneos').then(setTorneos).catch(() => setTorneos([]));
+}, []);
 
-  useEffect(() => {
-    if (usuario?.id) {
-      apiGet('perfiles')
-        .then(perfiles => {
-          const p = perfiles.find(p => p.usuario_id === usuario.id);
-          setPerfil(p);
-        })
-        .catch(() => setPerfil(null));
+// 2. Cargar perfil e inscripciones del usuario cuando se tenga el usuario
+useEffect(() => {
+  if (usuario?.id) {
+    apiGet('perfiles')
+      .then(perfiles => {
+        const p = perfiles.find(p => p.usuario_id === usuario.id);
+        setPerfil(p);
+      })
+      .catch(() => setPerfil(null));
+
+    apiGet('user/torneos')
+      .then(setInscripciones)
+      .catch(() => setInscripciones([]));
+  }
+}, [usuario?.id]);
+
+// 3. Cargar recompensas y conteo de jugadores por torneo
+useEffect(() => {
+  const fetchRecompensasYJugadores = async () => {
+    const all = [];
+    const counts = {};
+    for (const torneo of torneos) {
+      const recomp = await apiGet(`torneos/${torneo.id}/recompensas`);
+      const jugadores = await apiGet(`torneos/${torneo.id}/jugadores`);
+      all.push(...recomp.map(r => ({ ...r, torneo_id: torneo.id })));
+      counts[torneo.id] = jugadores.length;
     }
-  }, [usuario?.id]);
+    setRecompensas(all);
+    setJugadoresPorTorneo(counts);
+  };
 
-  useEffect(() => {
-    const cargarRecompensas = async () => {
-      try {
-        const all = [];
-        for (const torneo of torneos) {
-          const data = await apiGet(`torneos/${torneo.id}/recompensas`);
-          all.push(...data.map(r => ({ ...r, torneo_id: torneo.id })));
+  if (torneos.length > 0) fetchRecompensasYJugadores();
+}, [torneos]);
+
+// 4. Cargar partidas activas del usuario cuando haya torneos y usuario
+useEffect(() => {
+  const cargarPartidas = async () => {
+    const activas = torneos.filter(t => t.estado === 'activo');
+    const partidasTodas = [];
+
+    for (const torneo of activas) {
+      const partidas = await apiGet(`torneos/${torneo.id}/partidas-actuales`);
+      partidas.forEach(p => {
+        if (p.jugador1.id === usuario.id || p.jugador2?.id === usuario.id) {
+          partidasTodas.push({ ...p, torneoNombre: torneo.nombre });
         }
-        setRecompensas(all);
-      } catch (error) {
-        console.error('❌ Error al cargar recompensas:', error);
-      }
-    };
+      });
+    }
 
-    if (torneos.length > 0) cargarRecompensas();
-  }, [torneos]);
+    setPartidasUsuario(partidasTodas);
+  };
+
+  if (torneos.length > 0 && usuario) cargarPartidas();
+}, [torneos, usuario]);
+
+// 5. Cargar partidas si cambian las inscripciones 
+useEffect(() => {
+  const cargarPartidas = async () => {
+    const activas = torneos.filter(t => t.estado === 'activo');
+    const partidasTodas = [];
+
+    for (const torneo of activas) {
+      const partidas = await apiGet(`torneos/${torneo.id}/partidas-actuales`);
+      partidasTodas.push(...partidas.map(p => ({ ...p, torneoNombre: torneo.nombre })));
+    }
+
+    setPartidasUsuario(partidasTodas);
+  };
+
+  if (inscripciones.length > 0) cargarPartidas();
+}, [torneos, inscripciones]);
+
 
   const cambiarAvatar = async (nuevoAvatar) => {
     try {
@@ -68,55 +118,65 @@ const InicioUsuario = () => {
       alert('Error al cambiar el avatar');
     }
   };
+  
+  const estaInscrito = (torneoId) => inscripciones.some(t => t.id === torneoId);
+
+  const handleApuntarse = async (torneoId) => {
+    try {
+      await apiPost(`torneos/${torneoId}/inscribirse`);
+      const actualizadas = await apiGet('user/torneos');
+      setInscripciones(actualizadas);
+      const jugadores = await apiGet(`torneos/${torneoId}/jugadores`);
+      setJugadoresPorTorneo(prev => ({ ...prev, [torneoId]: jugadores.length }));
+    } catch (error) {
+      if (error?.response?.status === 403) {
+        alert("No hay plazas disponibles para este torneo.");
+      } else {
+        alert('Error al inscribirse');
+      }
+    }
+  };
+
+  const handleDesinscribirse = async (torneoId) => {
+    try {
+      await apiPost(`torneos/${torneoId}/desinscribirse`);
+      const actualizadas = await apiGet('user/torneos');
+      setInscripciones(actualizadas);
+      const jugadores = await apiGet(`torneos/${torneoId}/jugadores`);
+      setJugadoresPorTorneo(prev => ({ ...prev, [torneoId]: jugadores.length }));
+    } catch {
+      alert('❌ Error al desinscribirse');
+    }
+  };
 
   const abrirModalInfo = (torneo) => {
     setTorneoSeleccionado(torneo);
     setShowInfo(true);
   };
 
-  const puedeInscribirse = (nuevaFecha, fechasExistentes) => {
-    const nueva = new Date(nuevaFecha).toISOString().split('T')[0];
-    return !fechasExistentes.some(f => {
-      const fSimple = new Date(f).toISOString().split('T')[0];
-      return fSimple === nueva;
-    });
-  };
-  
-
   return (
     <TorneoLayout>
-      <Container fluid className="py-4" style={{ backgroundColor: '#121212', minHeight: '100vh' }}>
-        <h2 className="text-center mb-4" style={{ color: '#fff', fontFamily: 'Cinzel, serif' }}>VISTA GENERAL</h2>
+      <Container fluid className="py-5" style={{ backgroundColor: '#121212', color: '#F8F4E3', minHeight: '100vh' }}>
+        <h2 className="text-center mb-4" style={{ color: '#FFD700', fontFamily: 'Cinzel, serif' }}>Vista General</h2>
         <Row className="align-items-start">
-          {/* Torneos */}
           <Col md={8}>
-            <h2 className="mb-4 text-center" style={{ color: '#FFD700', fontFamily: 'Cinzel, serif', fontSize: '2rem' }}>TORNEOS DISPONIBLES</h2>
-            {torneos.map((torneo) => {
+            <h2 className="mb-4 text-center" style={{ color: '#FFD700' }}>TORNEOS DISPONIBLES</h2>
+            {torneos.map(torneo => {
+              const inscritos = jugadoresPorTorneo[torneo.id] || 0;
+              const maximo = torneo.max_jugadores || 8;
               const recompensasTorneo = recompensas.filter(r => r.torneo_id === torneo.id);
+
               return (
-                <Card key={torneo.id} className="mb-3" style={{
-                  backgroundColor: '#1c1c1c',
-                  color: '#F8F4E3',
-                  border: '2px solid #B22222',
-                  boxShadow: '0 0 10px rgba(178, 34, 34, 0.5)'
-                }}>
+                <Card key={torneo.id} className="mb-3" style={{ backgroundColor: '#1c1c1c', color: '#F8F4E3', border: '2px solid #B22222' }}>
                   <Card.Body className="text-center">
-                    <Card.Title style={{
-                      fontWeight: 'bold',
-                      fontSize: '1.5rem',
-                      color: '#B22222',
-                      textTransform: 'uppercase'
-                    }}>
-                      {torneo.nombre}
-                    </Card.Title>
-                    <Card.Subtitle className="mb-2" style={{ color: '#fff' }}>
-                      {torneo.fecha} — {torneo.formato}
-                    </Card.Subtitle>
-                    <div className="mt-3 text-start">
+                    <Card.Title style={{ color: '#B22222' }}>{torneo.nombre}</Card.Title>
+                    <Card.Subtitle style={{ color: '#fff' }}>{torneo.fecha} — {torneo.formato}</Card.Subtitle>
+                    <p>{inscritos}/{maximo} jugadores apuntados</p>
+                    <div>
                       <strong style={{ color: '#FFD700' }}>Recompensas:</strong>
                       {recompensasTorneo.length > 0 ? (
                         recompensasTorneo.map(r => (
-                          <div key={r.id} className="d-flex align-items-center gap-2 mt-2">
+                          <div key={r.id} className="d-flex align-items-center justify-content-center gap-2 mt-2">
                             <img
                               src={r.imagen_url || 'https://via.placeholder.com/40'}
                               alt={r.nombre_carta}
@@ -126,30 +186,21 @@ const InicioUsuario = () => {
                                 setMostrarModalCarta(true);
                               }}
                             />
-                            <span style={{ color: '#F8F4E3' }}>
-                              {r.puesto}º - {r.nombre_carta} ({r.rareza})
-                            </span>
+                            <span>{r.puesto}º - {r.nombre_carta} ({r.rareza})</span>
                           </div>
                         ))
                       ) : (
-                        <p className="mt-2" style={{ color: '#ffffff' }}>Sin recompensas</p>
+                        <p className="text-light">Sin recompensas</p>
                       )}
                     </div>
-                    <div className="d-flex flex-wrap justify-content-center gap-2 mt-3">
-                      <Button variant="outline-warning" size="sm" onClick={() => abrirModalInfo(torneo)}>
-                        Ver más info
-                      </Button>
+                    <div className="mt-3">
+                      <Button variant="outline-warning" size="sm" onClick={() => abrirModalInfo(torneo)}>Ver más info</Button>{' '}
                       {torneo.estado === 'inscripcion' && (
-                        <Button
-                          variant="outline-success"
-                          size="sm"
-                          disabled={!puedeInscribirse(torneo.fecha, torneos.filter(t => t.inscrito).map(t => t.fecha))}
-                        >
-                          Apuntarse
-                        </Button>
-                      )}
-                      {torneo.estado === 'activo' && (
-                        <Button variant="outline-info" size="sm">Ver emparejamientos</Button>
+                        estaInscrito(torneo.id) ? (
+                          <Button variant="outline-danger" size="sm" onClick={() => handleDesinscribirse(torneo.id)}>Desinscribirse</Button>
+                        ) : (
+                          <Button variant="outline-success" size="sm" onClick={() => handleApuntarse(torneo.id)} disabled={inscritos >= maximo}>Apuntarse</Button>
+                        )
                       )}
                     </div>
                   </Card.Body>
@@ -157,8 +208,6 @@ const InicioUsuario = () => {
               );
             })}
           </Col>
-
-          {/* Perfil + Foro */}
           <Col md={4}>
             <Card style={{ backgroundColor: '#1c1c1c', color: '#F8F4E3', border: '1px solid #FFD700' }}>
               <Card.Body className="text-center">
@@ -176,11 +225,12 @@ const InicioUsuario = () => {
                 <p><strong>Torneos Ganados:</strong> {perfil?.torneos_ganados ?? 0}</p>
               </Card.Body>
             </Card>
+
             <Card className="mt-4" style={{ backgroundColor: '#1c1c1c', color: '#F8F4E3', border: '1px solid #FFD700' }}>
               <Card.Body className="text-center">
-                <Card.Title style={{ color: '#FFD700', fontWeight: 'bold' }}>FORO GENERAL</Card.Title>
-                <p className="small">Participa en las discusiones generales, comenta barajas, sugiere cambios o comparte tus experiencias.</p>
-                <Button onClick={() => navigate('/usuario/foro')} style={{ backgroundColor: '#B22222', border: 'none' }} className="w-100">
+                <Card.Title style={{ color: '#FFD700' }}>FORO GENERAL</Card.Title>
+                <p>Participa en el foro compartiendo barajas, estrategias o dudas.</p>
+                <Button className="w-100" style={{ backgroundColor: '#B22222', border: 'none' }} onClick={() => navigate('/usuario/foro')}>
                   Ir al Foro
                 </Button>
               </Card.Body>
@@ -190,30 +240,41 @@ const InicioUsuario = () => {
 
         {/* Modal Avatar */}
         <Modal show={showModal} onHide={() => setShowModal(false)} centered>
-          <Modal.Header closeButton style={{ backgroundColor: '#1c1c1c', color: '#FFD700' }}>
-            <Modal.Title>Cambiar Avatar</Modal.Title>
-          </Modal.Header>
-          <Modal.Body style={{ backgroundColor: '#1c1c1c' }}>
-            <Row>
-              {avatars.map((a, i) => (
-                <Col xs={4} className="text-center mb-3" key={i}>
-                  <Image
-                    src={`/img/${a}`}
-                    roundedCircle
-                    width={80}
-                    style={{
-                      cursor: 'pointer',
-                      border: usuario?.avatar === a ? '2px solid #FFD700' : '2px solid transparent'
-                    }}
-                    onClick={() => cambiarAvatar(a)}
-                  />
-                </Col>
-              ))}
-            </Row>
-          </Modal.Body>
-        </Modal>
+        <Modal.Header
+          closeButton
+          style={{
+            backgroundColor: '#1c1c1c',
+            color: '#FFD700',
+            borderBottom: '1px solid #FFD700',
+          }}
+        >
+          <style>{`.btn-close { filter: invert(1); }`}</style>
+          <Modal.Title>Cambiar Avatar</Modal.Title>
+        </Modal.Header>
+        <Modal.Body style={{ backgroundColor: '#1c1c1c' }}>
+          <Row>
+            {avatars.map((a, i) => (
+              <Col xs={4} className="text-center mb-3" key={i}>
+                <Image
+                  src={`/img/${a}`}
+                  roundedCircle
+                  width={80}
+                  style={{
+                    cursor: 'pointer',
+                    border: usuario?.avatar === a ? '3px solid #FFD700' : '2px solid transparent',
+                    transition: 'border 0.2s'
+                  }}
+                  onClick={() => cambiarAvatar(a)}
+                />
+              </Col>
+            ))}
+          </Row>
+        </Modal.Body>
+      </Modal>
 
-        {/* Modal Imagen Carta */}
+
+
+        {/* Modal Carta */}
         <Modal show={mostrarModalCarta} onHide={() => setMostrarModalCarta(false)} centered size="lg">
           <Modal.Header closeButton style={{ backgroundColor: '#1c1c1c', color: '#FFD700' }}>
             <style>{`.btn-close { filter: invert(1); }`}</style>
@@ -240,7 +301,7 @@ const InicioUsuario = () => {
           <Modal.Body style={{ backgroundColor: '#1c1c1c', color: '#F8F4E3' }}>
             <p><strong>Formato:</strong> {torneoSeleccionado?.formato}</p>
             <p><strong>Fecha:</strong> {torneoSeleccionado?.fecha}</p>
-            <p><strong>Hora:</strong> {torneoSeleccionado?.hora || 'No especificada'}</p>
+            <p><strong>Hora:</strong> {torneoSeleccionado?.hora}</p>
             <p><strong>Descripción:</strong> {torneoSeleccionado?.descripcion}</p>
           </Modal.Body>
         </Modal>
