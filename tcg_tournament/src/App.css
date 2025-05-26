@@ -35,3 +35,6 @@
 .read-the-docs {
   color: #888;
 }
+.border-danger {
+  border: 2px solid #dc3545 !important; /* rojo claro estándar */
+}

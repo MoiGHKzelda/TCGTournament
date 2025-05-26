@@ -236,7 +236,7 @@ const AdminDashboard = () => {
         </h2>
         <Row>
           {/* Torneos */}
-          <Col md={8} style={{ maxHeight: '80vh', overflowY: 'auto', overflowX: 'hidden' }}>
+          <Col md={8} style={{ maxHeight: '100vh', overflowY: 'auto', overflowX: 'hidden' }}>
             <div className="text-end mb-4">
               <Button
                 onClick={abrirFormulario}
@@ -246,7 +246,7 @@ const AdminDashboard = () => {
               </Button>
             </div>
             
-            <div style={{ maxHeight: '80vh', overflowY: 'auto', paddingRight: '10px' }}>
+            <div style={{ maxHeight: '100vh', overflowY: 'auto', paddingRight: '20px' }}>
               <Row className="justify-content-start">
                 {torneos.map((torneo) => {
                   const recompensasTorneo = recompensas.filter(r => r.torneo_id === torneo.id);
@@ -406,7 +406,7 @@ const AdminDashboard = () => {
 
         {/* Modal editar usuario */}
         <Modal show={showEditarUsuario} onHide={() => setShowEditarUsuario(false)} centered>
-          <Modal.Header closeButton style={{ backgroundColor: '#1c1c1c', color: '#FFD700' }}>
+          <Modal.Header closeButton style={{ backgroundColor: '#1c1c1c', color: '#FFD700' }}closeVariant="white">
             <Modal.Title>Editar Usuario</Modal.Title>
           </Modal.Header>
           <Modal.Body style={{ backgroundColor: '#1c1c1c', color: '#F8F4E3' }}>
@@ -441,7 +441,7 @@ const AdminDashboard = () => {
         </Modal>
 
         <Modal show={mostrarModalRonda} onHide={() => setMostrarModalRonda(false)} centered size="lg">
-          <Modal.Header closeButton style={{ backgroundColor: '#1c1c1c', color: '#FFD700' }}>
+          <Modal.Header closeButton style={{ backgroundColor: '#1c1c1c', color: '#FFD700' }}closeVariant="white">
             <Modal.Title>Gestión de Ronda</Modal.Title>
           </Modal.Header>
           <Modal.Body style={{ backgroundColor: '#1c1c1c', color: '#F8F4E3' }}>
