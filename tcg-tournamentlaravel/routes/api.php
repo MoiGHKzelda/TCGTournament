@@ -12,8 +12,6 @@ use App\Http\Controllers\HiloForoController;
 use App\Http\Controllers\MensajeForoController;
 use App\Http\Controllers\AnuncioController;
 use App\Http\Controllers\CartaRecompensaController;
-use App\Http\Controllers\GestionTorneoController;
-use App\Models\Usuario;
 
 /*
 |--------------------------------------------------------------------------
@@ -21,39 +19,9 @@ use App\Models\Usuario;
 |--------------------------------------------------------------------------
 */
 
-// Registro y login
-Route::post('/register', function (Request $request) {
-    $val = Validator::make($request->all(), [
-        'nombre' => 'required|string|max:100',
-        'email' => 'required|email|unique:usuarios,email',
-        'password' => 'required|string|min:6',
-        'telefono' => 'required|string|max:20',
-        'dni' => 'required|string|max:20|unique:usuarios,dni',
-    ]);
-
-    if ($val->fails()) {
-        return response()->json(['errors' => $val->errors()], 422);
-    }
-
-    $usuario = Usuario::create([
-        'nombre' => $request->nombre,
-        'email' => $request->email,
-        'password' => Hash::make($request->password),
-        'telefono' => $request->telefono,
-        'dni' => $request->dni,
-        'rol' => 'jugador',
-        'avatar' => 'avatar_1.png'
-    ]);
-    
-
-    return response()->json([
-                'message' => 'Usuario registrado correctamente',
-                'usuario' => $usuario
-            ], 201);
-    });
-    Route::post('/login', [AuthController::class, 'login']);
-    
-
+// Registro y login (usando controladores correctamente)
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
 
 /*
 |--------------------------------------------------------------------------
@@ -64,7 +32,7 @@ Route::post('/register', function (Request $request) {
 Route::middleware('auth:sanctum')->group(function () {
 
     // Usuario autenticado
-    Route::get('/user', fn(Request $request) => $request->user());
+    Route::get('/user', fn(Request $request) => $request->user()->load('perfil'));
     Route::get('/user/torneos', fn(Request $request) => $request->user()->torneosInscritos);
 
     // Funciones de torneo
@@ -77,17 +45,16 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/torneos/{id}/partidas/ronda/{ronda}', [PartidaController::class, 'partidasPorTorneoYRonda']);
     Route::put('/partidas/{id}/ganador', [PartidaController::class, 'asignarGanador']);
-    
-    // TORNEO: iniciar, pasar ronda, guardar ganadores, etc.
+
+    // TORNEO: iniciar, avanzar ronda, guardar ganadores, finalizar
     Route::post('/torneos/{id}/iniciar', [TorneoController::class, 'iniciarTorneo']);
     Route::post('/torneos/{id}/pasar-ronda', [TorneoController::class, 'pasarRonda']);
     Route::post('/torneos/{id}/guardar-ganadores', [TorneoController::class, 'guardarGanadores']);
     Route::get('/torneos/{id}/partidas-actuales', [TorneoController::class, 'partidasActuales']);
     Route::post('/torneos/{id}/finalizar', [TorneoController::class, 'finalizarTorneo']);
     Route::post('/torneos/{id}/ganador', [TorneoController::class, 'asignarGanador']);
-    
 
-    // CRUD de recursos
+    // Recursos RESTful
     Route::apiResource('usuarios', UsuarioController::class);
     Route::apiResource('perfiles', PerfilController::class);
     Route::apiResource('torneos', TorneoController::class);
@@ -98,5 +65,3 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('anuncios', AnuncioController::class);
     Route::apiResource('recompensas', CartaRecompensaController::class);
 });
-
-

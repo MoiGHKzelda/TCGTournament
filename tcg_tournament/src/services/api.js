@@ -39,10 +39,19 @@ export const postRegister = async (formData) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(formData)
   });
+
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Registro fallido');
+
+  if (!res.ok) {
+    //  Lanza todo el contenido si hay un 422
+    const error = new Error(data.message || 'Registro fallido');
+    error.response = { status: res.status, data };
+    throw error;
+  }
+
   return data;
 };
+
 
 // Petición genérica GET
 export const apiGet = async (url) => {

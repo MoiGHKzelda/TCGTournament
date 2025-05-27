@@ -15,8 +15,7 @@ class Perfil extends Model
         'usuario_id',
         'torneos_jugados',
         'torneos_ganados',
-        'logros',
-        'avatar'
+        'logros'
     ];
     
 

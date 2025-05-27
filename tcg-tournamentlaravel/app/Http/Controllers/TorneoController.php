@@ -21,8 +21,24 @@ class TorneoController extends Controller
      */
     public function index()
     {
-        return response()->json(Torneo::all());
+        $torneos = Torneo::withCount('jugadores')->get();
+
+        return response()->json($torneos->map(function ($torneo) {
+            return [
+                'id' => $torneo->id,
+                'nombre' => $torneo->nombre,
+                'descripcion' => $torneo->descripcion,
+                'fecha' => $torneo->fecha,
+                'hora' => $torneo->hora,
+                'formato' => $torneo->formato,
+                'max_jugadores' => $torneo->max_jugadores,
+                'estado' => $torneo->estado,
+                'jugadores_actuales' => $torneo->jugadores_count,
+            ];
+        }));
     }
+
+
 
     /**
      * Show the form for creating a new resource.
@@ -149,12 +165,22 @@ class TorneoController extends Controller
                 $partida->ganador_id = $ganadorId;
                 $partida->resultado = "Ganó usuario $ganadorId";
                 $partida->save();
+
+                // Sumar torneos jugados a ambos jugadores si no se han contado aún
+                foreach ([$partida->jugador1_id, $partida->jugador2_id] as $jugadorId) {
+                    if ($jugadorId) {
+                        $perfil = Perfil::where('usuario_id', $jugadorId)->first();
+                        if ($perfil) {
+                            $perfil->increment('torneos_jugados');
+                        }
+                    }
+                }
             }
         }
 
         $rondaActual = Partida::where('torneo_id', $id)->max('ronda');
 
-        // Corrección aquí
+        // Obtener ganadores de la ronda actual
         $ganadorIds = Partida::where('torneo_id', $id)
             ->where('ronda', $rondaActual)
             ->pluck('ganador_id')
@@ -162,6 +188,7 @@ class TorneoController extends Controller
 
         $ganadoresUsuarios = Usuario::whereIn('id', $ganadorIds)->get();
 
+        // Si queda un solo ganador, finaliza el torneo
         if ($ganadoresUsuarios->count() === 1) {
             $torneo = Torneo::findOrFail($id);
             $torneo->estado = 'finalizado';
@@ -179,7 +206,7 @@ class TorneoController extends Controller
             ]);
         }
 
-        //  Si quedan más de uno, crear nueva ronda
+        // Si quedan más de uno, crear nueva ronda
         $nuevaRonda = $rondaActual + 1;
         $parejas = $ganadoresUsuarios->chunk(2);
 
@@ -200,11 +227,18 @@ class TorneoController extends Controller
                     'ronda' => $nuevaRonda,
                     'resultado' => 'Pasa automáticamente',
                 ]);
+
+                // También sumar torneo jugado al que pasa automático
+                $perfil = Perfil::where('usuario_id', $par[0]->id)->first();
+                if ($perfil) {
+                    $perfil->increment('torneos_jugados');
+                }
             }
         }
 
         return response()->json(['message' => 'Ronda actualizada correctamente']);
     }
+
 
 
     public function iniciarTorneo($id)

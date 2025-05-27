@@ -148,6 +148,12 @@ useEffect(() => {
       alert('❌ Error al desinscribirse');
     }
   };
+  useEffect(() => {
+    apiGet('user').then(data => {
+      setUsuario(data);
+    }).catch(() => setUsuario(null));
+  }, []);
+  
 
   const abrirModalInfo = (torneo) => {
     setTorneoSeleccionado(torneo);
@@ -197,9 +203,15 @@ useEffect(() => {
                       <Button variant="outline-warning" size="sm" onClick={() => abrirModalInfo(torneo)}>Ver más info</Button>{' '}
                       {torneo.estado === 'inscripcion' && (
                         estaInscrito(torneo.id) ? (
-                          <Button variant="outline-danger" size="sm" onClick={() => handleDesinscribirse(torneo.id)}>Desinscribirse</Button>
+                          <Button variant="outline-danger" size="sm" onClick={() => handleDesinscribirse(torneo.id)}>
+                            Desinscribirse
+                          </Button>
+                        ) : inscritos < maximo ? (
+                          <Button variant="outline-success" size="sm" onClick={() => handleApuntarse(torneo.id)}>
+                            Apuntarse
+                          </Button>
                         ) : (
-                          <Button variant="outline-success" size="sm" onClick={() => handleApuntarse(torneo.id)} disabled={inscritos >= maximo}>Apuntarse</Button>
+                          <span className="text-danger fw-bold">Cupo completo</span>
                         )
                       )}
                     </div>
@@ -221,8 +233,8 @@ useEffect(() => {
                 <h5 className="mt-2">{usuario?.nombre?.toUpperCase()}</h5>
                 <p>{usuario?.email}</p>
                 <hr />
-                <p><strong>Torneos Jugados:</strong> {perfil?.torneos_jugados ?? 0}</p>
-                <p><strong>Torneos Ganados:</strong> {perfil?.torneos_ganados ?? 0}</p>
+                <p><strong>Torneos Jugados:</strong> {usuario?.perfil?.torneos_jugados ?? 0}</p>
+                <p><strong>Torneos Ganados:</strong> {usuario?.perfil?.torneos_ganados ?? 0}</p>
               </Card.Body>
             </Card>
 

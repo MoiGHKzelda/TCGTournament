@@ -4,6 +4,9 @@ import { Navigate, Link } from 'react-router-dom';
 import AuthLayout from './AuthLayout';
 import { useAuth } from '../context/AuthContext';
 import { postLogin } from '../services/api';
+import { useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
+
 
 
 const Login = () => {
@@ -12,11 +15,21 @@ const Login = () => {
   const [mensaje, setMensaje] = useState('');
   const { login, user } = useAuth();
 
+  const location = useLocation();
+  const [registroExitoso, setRegistroExitoso] = useState(false);
+
+  useEffect(() => {
+    if (location.state?.registroExitoso) {
+      setRegistroExitoso(true);
+      setTimeout(() => setRegistroExitoso(false), 4000);
+    }
+  }, [location.state]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const data = await postLogin(email, password);
-      login(data.usuario, data.token);
+      login(data.user, data.access_token);
     } catch (error) {
       setMensaje(error.message);
     }
@@ -35,17 +48,15 @@ const Login = () => {
           <Card className="shadow-lg border border-danger rounded-4 px-3 py-4" style={{ backgroundColor: '#1c1c1c', color: '#F8F4E3' }}>
             <Card.Body>
               <h2 className="text-center mb-4" style={{ fontFamily: 'Cinzel, serif' }}>Iniciar Sesión</h2>
-              {mensaje && <Alert variant="danger">{mensaje}</Alert>}
+              {registroExitoso && (
+                <Alert variant="success">
+                  ✅ Usuario registrado con éxito. Ya puedes iniciar sesión.
+                </Alert>
+              )}
               <Form onSubmit={handleSubmit}>
                 <Form.Group className="mb-3">
                   <Form.Label>Correo Electrónico</Form.Label>
-                  <Form.Control
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="bg-dark text-light border-secondary"
-                  />
+                  <Form.Control type="email" value={email} onChange={(e) => { setEmail(e.target.value); setRegistroExitoso(false);}} required className="bg-dark text-light border-secondary"/>
                 </Form.Group>
                 <Form.Group className="mb-4">
                   <Form.Label>Contraseña</Form.Label>

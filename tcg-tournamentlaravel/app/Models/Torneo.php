@@ -38,6 +38,7 @@ class Torneo extends Model
         return $this->belongsToMany(Usuario::class, 'torneo_jugadors', 'torneo_id', 'usuario_id');
     }
 
+
     public function hilos()
     {
         return $this->hasMany(HiloForo::class);

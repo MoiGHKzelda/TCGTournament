@@ -19,55 +19,74 @@ const Register = () => {
   const validarDni = (valor) => /^[0-9]{8}[A-Za-z]$/.test(valor);
 
   const isFormValid = validarTelefono(telefono) && validarDni(dni);
+  const esTextoValido = (texto) => texto.trim().length > 0;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErroresValidacion({});
-
+    setError('');
+    setMensaje('');
+    if (!esTextoValido(nombre)) {
+      setErroresValidacion({ nombre: 'El nombre no puede estar vacío o con solo espacios.' });
+      return;
+    }
+    
+    if (!esTextoValido(email)) {
+      setErroresValidacion({ email: 'El correo electrónico no puede estar vacío o con espacios.' });
+      return;
+    }
+    
+    if (!esTextoValido(password)) {
+      setErroresValidacion({ password: 'La contraseña no puede estar vacía o con espacios.' });
+      return;
+    }
+    
+    if (!esTextoValido(dni)) {
+      setErroresValidacion({ dni: 'El DNI no puede estar vacío o con espacios.' });
+      return;
+    }
+    
+  
     if (!validarTelefono(telefono)) {
-      setError('El teléfono debe tener exactamente 9 dígitos.');
-      setErroresValidacion({ telefono: true });
+      setErroresValidacion({ telefono: 'El teléfono debe tener exactamente 9 dígitos.' });
       return;
     }
-
+  
     if (!validarDni(dni)) {
-      setError('El DNI debe tener 8 números seguidos de una letra. Ej: 12345678A');
-      setErroresValidacion({ dni: true });
+      setErroresValidacion({ dni: 'El DNI debe tener 8 números seguidos de una letra. Ej: 12345678A' });
       return;
     }
-
+  
     try {
-      await postRegister({ nombre, email, password, telefono, dni });
-      setMensaje('Usuario registrado con éxito');
-      setError('');
-      setErroresValidacion({});
-      setTimeout(() => navigate('/'), 1500);
+      const response = await postRegister({ nombre, email, password, telefono, dni });
+  
+      // Asegúrate de que hubo respuesta 201
+      if (response?.usuario || response?.user) {
+        navigate('/', {
+          replace: true,
+          state: { registroExitoso: true }
+        });
+      }
     } catch (error) {
       if (error.response && error.response.status === 422) {
+        console.log("Errores de validación desde el backend:", error.response.data);
         const validationErrors = error.response.data.errors;
-        let nuevosErrores = {};
-
+        const nuevosErrores = {};
+    
         if (validationErrors) {
-          if (validationErrors.email) {
-            setError('El correo electrónico ya está registrado.');
-            nuevosErrores.email = true;
-          } else if (validationErrors.nombre) {
-            setError('El nombre ya está en uso, por favor elige otro.');
-            nuevosErrores.nombre = true;
-          } else if (validationErrors.dni) {
-            setError('El DNI ya está registrado.');
-            nuevosErrores.dni = true;
-          } else {
-            setError('Error de validación en los datos proporcionados.');
+          for (const campo in validationErrors) {
+            nuevosErrores[campo] = validationErrors[campo][0];
           }
-
-          setErroresValidacion(nuevosErrores);
         }
+    
+        setErroresValidacion(nuevosErrores);
+        setError('Corrige los errores antes de continuar.');
       } else {
-        setError(error.message || 'Registro fallido');
+        setError(error.message || 'Error al registrar');
       }
     }
   };
+  
 
   return (
     <AuthLayout>
@@ -88,6 +107,9 @@ const Register = () => {
                     required
                     className={`bg-dark text-light border-secondary ${erroresValidacion.nombre ? 'border-danger' : ''}`}
                   />
+                  {erroresValidacion.nombre && (
+                    <Form.Text className="text-danger">{erroresValidacion.nombre}</Form.Text>
+                  )}
                 </Form.Group>
                 <Form.Group className="mb-3">
                   <Form.Label>Correo Electrónico</Form.Label>
@@ -98,6 +120,9 @@ const Register = () => {
                     required
                     className={`bg-dark text-light border-secondary ${erroresValidacion.email ? 'border-danger' : ''}`}
                   />
+                  {erroresValidacion.email && (
+                    <Form.Text className="text-danger">{erroresValidacion.email}</Form.Text>
+                  )}
                 </Form.Group>
                 <Form.Group className="mb-3">
                   <Form.Label>Teléfono</Form.Label>
@@ -108,6 +133,9 @@ const Register = () => {
                     required
                     className={`bg-dark text-light border-secondary ${erroresValidacion.telefono ? 'border-danger' : ''}`}
                   />
+                  {erroresValidacion.telefono && (
+                    <Form.Text className="text-danger">{erroresValidacion.telefono}</Form.Text>
+                  )}
                 </Form.Group>
                 <Form.Group className="mb-3">
                   <Form.Label>DNI</Form.Label>
@@ -118,6 +146,9 @@ const Register = () => {
                     required
                     className={`bg-dark text-light border-secondary ${erroresValidacion.dni ? 'border-danger' : ''}`}
                   />
+                  {erroresValidacion.dni && (
+                    <Form.Text className="text-danger">{erroresValidacion.dni}</Form.Text>
+                  )}
                 </Form.Group>
                 <Form.Group className="mb-4">
                   <Form.Label>Contraseña</Form.Label>
@@ -126,8 +157,11 @@ const Register = () => {
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     required
-                    className="bg-dark text-light border-secondary"
+                    className={`bg-dark text-light border-secondary ${erroresValidacion.password ? 'border-danger' : ''}`}
                   />
+                  {erroresValidacion.password && (
+                    <Form.Text className="text-danger">{erroresValidacion.password}</Form.Text>
+                  )}
                 </Form.Group>
                 <Button type="submit" disabled={!isFormValid} className="w-100 py-2" style={{ backgroundColor: '#B22222', border: 'none' }}>
                   Registrarse

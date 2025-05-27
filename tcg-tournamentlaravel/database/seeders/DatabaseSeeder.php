@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
+use App\Models\Usuario;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -13,11 +13,13 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        Usuario::factory()->create([
+            'nombre' => 'admin',
+            'email' => 'admin@admin.com',
+            'password' => bcrypt('12345678'),
+            'rol' => 'admin',
+            'telefono' => '666666666',
+            'dni' => '12345678A'
         ]);
     }
 }

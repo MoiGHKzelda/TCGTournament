@@ -16,7 +16,19 @@ class Usuario extends Authenticatable
 
     protected $fillable = ['nombre', 'email', 'password', 'telefono', 'dni', 'rol', 'avatar'];
 
-    
+    protected static function booted()
+    {
+        static::created(function ($usuario) {
+            $usuario->perfil()->create([
+                'torneos_jugados' => 0,
+                'torneos_ganados' => 0,
+                'logros' => null,
+            ]);
+        });
+    }
+
+
+
 
     public $timestamps = false;
 

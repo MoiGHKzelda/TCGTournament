@@ -110,6 +110,7 @@ const AdminDashboard = () => {
       await apiPost(`torneos/${torneoSeleccionado.id}/guardar-ganadores`, {
         ganadores: ganadoresSeleccionados
       });
+      await apiGet('user').then(setUsuario);
       setMensajeToast('Ganadores registrados y ronda actualizada');
       setMostrarToast(true);
       setMostrarModalRonda(false);
@@ -344,7 +345,7 @@ const AdminDashboard = () => {
                                 setTorneoSeleccionado(torneo);
                                 setShowRecompensa(true);
                               }}
-                              disabled={recompensasTorneo.length >= 3 || torneo.estado !== 'inscripcion'}
+                              disabled={recompensasTorneo.length >= 3}
                             >
                               Añadir Recompensa
                             </Button>
