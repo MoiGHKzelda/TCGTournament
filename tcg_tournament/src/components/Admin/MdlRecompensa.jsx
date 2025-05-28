@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+// ✅ MdlRecompensa.jsx - Optimizado
+import React, { useState, useCallback } from 'react';
 import { Modal, Button, Form, Row, Col, Card, Spinner } from 'react-bootstrap';
 import { apiPost } from '../../services/api';
 
@@ -7,43 +8,33 @@ const MdlRecompensa = ({ show, handleClose, torneoId, onSave }) => {
   const [resultados, setResultados] = useState([]);
   const [cargando, setCargando] = useState(false);
   const [mensaje, setMensaje] = useState('');
-  const [formData, setFormData] = useState({
-    puesto: '1',
-  });
+  const [formData, setFormData] = useState({ puesto: '1' });
 
-  const buscarCarta = async () => {
-    if (!busqueda.trim()) {
-      setMensaje('Por favor ingresa un nombre de carta');
-      setResultados([]);
-      return;
-    }
+  // Buscar carta en la API de Scryfall
+  const buscarCarta = useCallback(async () => {
     setCargando(true);
     setMensaje('');
     setResultados([]);
     try {
       const res = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(busqueda)}`);
-
       if (!res.ok) throw new Error('Carta no encontrada');
 
       const data = await res.json();
-
       if (!data.data || data.data.length === 0) {
         setMensaje('❌ No se encontró ninguna carta con ese nombre.');
-        setResultados([]);
         return;
       }
-
       setResultados(data.data);
     } catch (error) {
       setMensaje('❌ No se encontró ninguna carta con ese nombre.');
-      setResultados([]);
       console.error(error);
     } finally {
       setCargando(false);
     }
-  };
+  }, [busqueda]);
 
-  const agregarRecompensa = async (carta) => {
+  // Enviar la carta seleccionada como recompensa
+  const agregarRecompensa = useCallback(async (carta) => {
     try {
       await apiPost(`torneos/${torneoId}/recompensas`, {
         nombre_carta: carta.name,
@@ -52,22 +43,17 @@ const MdlRecompensa = ({ show, handleClose, torneoId, onSave }) => {
         puesto: formData.puesto,
         imagen_url: carta.image_uris?.normal || null,
       });
-      if (onSave) onSave(); // Cierra modal y recarga recompensas
+      if (onSave) onSave();
     } catch (error) {
       console.error('❌ Error al guardar recompensa', error);
-      alert('Error al agregar recompensa');
     }
-  };
+  }, [formData.puesto, onSave, torneoId]);
 
   return (
     <Modal show={show} onHide={handleClose} centered size="lg">
       <Modal.Header
         closeButton
-        style={{
-          backgroundColor: '#1c1c1c',
-          color: '#FFD700',
-          borderBottom: '1px solid #FFD700',
-        }}
+        style={{ backgroundColor: '#1c1c1c', color: '#FFD700', borderBottom: '1px solid #FFD700' }}
       >
         <style>{`.btn-close { filter: invert(1); }`}</style>
         <Modal.Title>Buscar Carta de Recompensa</Modal.Title>
@@ -81,12 +67,6 @@ const MdlRecompensa = ({ show, handleClose, torneoId, onSave }) => {
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             placeholder="Ej. Lightning Bolt"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                buscarCarta();
-              }
-            }}
           />
         </Form.Group>
 
@@ -102,13 +82,10 @@ const MdlRecompensa = ({ show, handleClose, torneoId, onSave }) => {
           {resultados.map((carta) => (
             <Col md={4} key={carta.id} className="mb-3">
               <Card style={{ backgroundColor: '#282828', border: '1px solid #FFD700', color: '#F8F4E3' }}>
-                {carta.image_uris?.normal && (
-                  <Card.Img variant="top" src={carta.image_uris.normal} alt={carta.name} />
-                )}
+                <Card.Img variant="top" src={carta.image_uris?.normal} alt={carta.name} />
                 <Card.Body className="text-center">
                   <Card.Title style={{ fontSize: '1rem' }}>{carta.name}</Card.Title>
                   <Card.Text style={{ fontSize: '0.85rem' }}>Rareza: {carta.rarity}</Card.Text>
-
                   <Form.Group className="mb-2">
                     <Form.Label>Puesto</Form.Label>
                     <Form.Select
@@ -122,7 +99,6 @@ const MdlRecompensa = ({ show, handleClose, torneoId, onSave }) => {
                       <option value="3">3º Puesto</option>
                     </Form.Select>
                   </Form.Group>
-
                   <Button variant="success" size="sm" onClick={() => agregarRecompensa(carta)}>
                     Añadir como Recompensa
                   </Button>

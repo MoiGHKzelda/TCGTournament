@@ -1,5 +1,4 @@
-// ✅ Torneos.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Button, Card, Col, Row } from 'react-bootstrap';
 import { apiGet } from '../../services/api';
 import TorneoLayout from './TorneoLayout';
@@ -8,16 +7,20 @@ const Torneos = () => {
   const [torneos, setTorneos] = useState([]);
   const [mensaje, setMensaje] = useState('');
 
-  useEffect(() => {
+  const cargarTorneos = useCallback(() => {
     apiGet('torneos')
       .then(data => setTorneos(data))
       .catch(() => setMensaje('Error al cargar los torneos'));
   }, []);
 
+  useEffect(() => {
+    cargarTorneos();
+  }, [cargarTorneos]);
+
   return (
     <TorneoLayout>
-      <h2 className="mb-4">Torneos Disponibles</h2>
-      {mensaje && <p className="text-danger">{mensaje}</p>}
+      <h2 className="mb-4 text-center" style={{ color: '#FFD700', fontFamily: 'Cinzel, serif' }}>Torneos Disponibles</h2>
+      {mensaje && <p className="text-danger text-center">{mensaje}</p>}
       <Row className="justify-content-center">
         {torneos.map((torneo) => (
           <Col key={torneo.id} md={6} lg={4} className="mb-4">

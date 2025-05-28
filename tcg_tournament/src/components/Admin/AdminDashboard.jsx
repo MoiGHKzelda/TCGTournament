@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   Button, Col, Row, Card, Container,
   Toast, ToastContainer, ListGroup, Modal, Form
@@ -25,47 +25,77 @@ const AdminDashboard = () => {
   const [ganadoresSeleccionados, setGanadoresSeleccionados] = useState({});
   const [jugadoresPorTorneo, setJugadoresPorTorneo] = useState({});
 
-  const prevTorneosRef = useRef([]);
-
-  const ordenarTorneos = (lista) => {
+  // Ordena torneos por estado (activo > inscripción > finalizado)
+  const ordenarTorneos = useCallback((lista) => {
     const prioridad = { activo: 0, inscripcion: 1, finalizado: 2 };
     return [...lista].sort((a, b) => {
       const prioridadA = prioridad[a.estado] ?? 3;
       const prioridadB = prioridad[b.estado] ?? 3;
       return prioridadA - prioridadB || b.id - a.id;
     });
-  };
+  }, []);
 
-  const cargarTorneos = async () => {
+  // Carga todos los datos iniciales del dashboard (torneos, recompensas, jugadores por torneo)
+  const cargarTodo = useCallback(async () => {
     try {
-      const data = await apiGet('torneos');
-      const ordenados = ordenarTorneos(data);
+      const torneosRes = await apiGet('torneos');
+      const ordenados = ordenarTorneos(torneosRes);
       setTorneos(ordenados);
+
+      await Promise.all([
+        cargarRecompensas(ordenados),
+        cargarJugadoresPorTorneo(ordenados),
+      ]);
     } catch {
-      setMensajeToast('❌ Error al cargar torneos');
+      setMensajeToast('❌ Error al cargar los datos iniciales');
       setMostrarToast(true);
-      setTorneos([]);
     }
-  };
+  }, [ordenarTorneos]);
 
-  const abrirFormulario = () => setMostrarFormulario(true);
-  const cerrarFormulario = () => {
-    setMostrarFormulario(false);
-    setTorneoEditando(null);
-  };
+  // Carga recompensas para todos los torneos
+  const cargarRecompensas = useCallback(async (listaTorneos) => {
+    try {
+      const promesas = listaTorneos.map(t =>
+        apiGet(`torneos/${t.id}/recompensas`).then(data =>
+          data.map(r => ({ ...r, torneo_id: t.id }))
+        )
+      );
+      const resultados = await Promise.all(promesas);
+      setRecompensas(resultados.flat());
+    } catch (error) {
+      console.error('Error al cargar recompensas', error);
+    }
+  }, []);
 
-  const manejarGuardarTorneo = async () => {
-    await cargarTorneos();
-    setMensajeToast(torneoEditando ? 'Torneo actualizado correctamente.' : 'Torneo creado correctamente.');
-    setMostrarToast(true);
-    cerrarFormulario();
-  };
+  // Carga cantidad de jugadores por torneo
+  const cargarJugadoresPorTorneo = useCallback(async (listaTorneos) => {
+    try {
+      const promesas = listaTorneos.map(t =>
+        apiGet(`torneos/${t.id}/jugadores`).then(j => [t.id, j.length])
+      );
+      const resultados = await Promise.all(promesas);
+      setJugadoresPorTorneo(Object.fromEntries(resultados));
+    } catch (error) {
+      console.error('Error al cargar jugadores por torneo', error);
+    }
+  }, []);
 
-  const eliminarTorneo = async (id) => {
+  // Carga usuarios con rol "jugador"
+  const cargarUsuarios = useCallback(async () => {
+    try {
+      const data = await apiGet('usuarios');
+      setUsuarios(data.filter(u => u.rol === 'jugador'));
+    } catch (e) {
+      console.error('Error cargando usuarios', e);
+    }
+  }, []);
+
+  // Elimina un torneo con confirmación
+  const eliminarTorneo = useCallback(async (id) => {
     if (confirm('¿Estás seguro de que deseas eliminar este torneo?')) {
       try {
         await apiDelete(`torneos/${id}`);
-        await cargarTorneos();
+        await cargarTodo();
         setMensajeToast('Torneo eliminado correctamente.');
         setMostrarToast(true);
       } catch {
@@ -73,20 +103,48 @@ const AdminDashboard = () => {
         setMostrarToast(true);
       }
     }
-  };
+  }, [cargarTodo]);
 
-  const iniciarTorneo = async (id) => {
+  // Inicia un torneo, si el usuario lo confirma
+  const iniciarTorneo = useCallback(async (id) => {
     if (!confirm('¿Estás seguro de que deseas iniciar este torneo?')) return;
     try {
       const res = await apiPost(`torneos/${id}/iniciar`);
       alert(res.message || 'Torneo iniciado');
-      await cargarTorneos();
+      await cargarTodo();
     } catch (error) {
       alert(error.message || '❌ Error al iniciar el torneo');
     }
-  };
+  }, [cargarTodo]);
 
-  const pasarRonda = async (id) => {
+  // Finaliza un torneo, si el usuario lo confirma
+  const finalizarTorneo = useCallback(async (id) => {
+    if (!confirm('¿Estás seguro de que deseas finalizar este torneo?')) return;
+    try {
+      const res = await apiPost(`torneos/${id}/finalizar`);
+      alert(res.message || 'Torneo finalizado');
+      await cargarTodo();
+    } catch (error) {
+      alert(error.message || '❌ Error al finalizar el torneo');
+    }
+  }, [cargarTodo]);
+
+  // 🔄 Refresca recompensas de un solo torneo sin recargar todo
+  const recargarRecompensasDeTorneo = useCallback(async (torneoId) => {
+    try {
+      const recompensasActualizadas = await apiGet(`torneos/${torneoId}/recompensas`);
+      setRecompensas(prev => {
+        const sinAntiguas = prev.filter(r => r.torneo_id !== torneoId);
+        const nuevas = recompensasActualizadas.map(r => ({ ...r, torneo_id: torneoId }));
+        return [...sinAntiguas, ...nuevas];
+      });
+    } catch (err) {
+      console.error('❌ Error al recargar recompensas de torneo', err);
+    }
+  }, []);
+
+  // Carga partidas actuales de un torneo para pasar de ronda
+  const pasarRonda = useCallback(async (id) => {
     try {
       const partidas = await apiGet(`torneos/${id}/partidas-actuales`);
       setPartidasRonda(partidas);
@@ -96,20 +154,10 @@ const AdminDashboard = () => {
       setMensajeToast('❌ Error al cargar partidas');
       setMostrarToast(true);
     }
-  };
+  }, [torneos]);
 
-  const finalizarTorneo = async (id) => {
-    if (!confirm('¿Estás seguro de que deseas finalizar este torneo?')) return;
-    try {
-      const res = await apiPost(`torneos/${id}/finalizar`);
-      alert(res.message || 'Torneo finalizado');
-      await cargarTorneos();
-    } catch (error) {
-      alert(error.message || '❌ Error al finalizar el torneo');
-    }
-  };
-
-  const handleConfirmarGanadores = async () => {
+  // Registra ganadores de una ronda y avanza a la siguiente
+  const handleConfirmarGanadores = useCallback(async () => {
     const faltan = partidasRonda.some(p => !ganadoresSeleccionados[p.id]);
     if (faltan) {
       alert('Debes seleccionar un ganador para todas las partidas.');
@@ -122,68 +170,31 @@ const AdminDashboard = () => {
       setMensajeToast('Ganadores registrados y ronda actualizada');
       setMostrarToast(true);
       setMostrarModalRonda(false);
-      await cargarTorneos();
+      await cargarTodo();
     } catch (e) {
       const msg = e?.response?.data?.message || 'Error al guardar ganadores';
       setMensajeToast(`❌ ${msg}`);
       setMostrarToast(true);
-    }    
-  };
-
-  const cargarRecompensas = async () => {
-    try {
-      const peticiones = torneos.map(torneo =>
-        apiGet(`torneos/${torneo.id}/recompensas`).then(data =>
-          data.map(r => ({ ...r, torneo_id: torneo.id }))
-        )
-      );
-      const recompensasAll = (await Promise.all(peticiones)).flat();
-      setRecompensas(recompensasAll);
-    } catch (error) {
-      console.error('Error al cargar recompensas', error);
     }
-  };
-  
+  }, [ganadoresSeleccionados, partidasRonda, torneoSeleccionado, cargarTodo]);
 
-  const cargarUsuarios = async () => {
-    try {
-      const data = await apiGet('usuarios');
-      setUsuarios(data.filter(u => u.rol === 'jugador'));
-    } catch (e) {
-      console.error('Error cargando usuarios', e);
-    }
-  };
+  // Al guardar un torneo nuevo o editado, recarga todo
+  const manejarGuardarTorneo = useCallback(async () => {
+    await cargarTodo();
+    setMensajeToast(torneoEditando ? 'Torneo actualizado correctamente.' : 'Torneo creado correctamente.');
+    setMostrarToast(true);
+    cerrarFormulario();
+  }, [torneoEditando, cargarTodo]);
 
-  const cargarJugadoresPorTorneo = async () => {
-    try {
-      const resultados = await Promise.all(
-        torneos.map(async torneo => {
-          const jugadores = await apiGet(`torneos/${torneo.id}/jugadores`);
-          return { id: torneo.id, count: jugadores.length };
-        })
-      );
-      const conteos = Object.fromEntries(resultados.map(r => [r.id, r.count]));
-      setJugadoresPorTorneo(conteos);
-    } catch (error) {
-      console.error('Error cargando jugadores', error);
-    }
-  };
-  
-
-  const editarUsuario = async () => {
-    try {
-      await apiPut(`usuarios/${usuarioEditando.id}`, usuarioEditando);
-      setMensajeToast('Usuario actualizado');
-      setMostrarToast(true);
-      setShowEditarUsuario(false);
-      cargarUsuarios();
-    } catch (err) {
-      setMensajeToast('❌ Error al actualizar usuario');
-      setMostrarToast(true);
-    }
+  // Abre/cierra formulario de torneo
+  const abrirFormulario = () => setMostrarFormulario(true);
+  const cerrarFormulario = () => {
+    setMostrarFormulario(false);
+    setTorneoEditando(null);
   };
 
-  const eliminarRecompensa = async (id) => {
+  // Elimina una recompensa específica
+  const eliminarRecompensa = useCallback(async (id) => {
     if (confirm('¿Eliminar esta recompensa?')) {
       try {
         await apiDelete(`recompensas/${id}`);
@@ -195,9 +206,24 @@ const AdminDashboard = () => {
         setMostrarToast(true);
       }
     }
-  };
+  }, []);
 
-  const eliminarUsuario = async (id) => {
+  // Guarda los cambios de un usuario editado
+  const editarUsuario = useCallback(async () => {
+    try {
+      await apiPut(`usuarios/${usuarioEditando.id}`, usuarioEditando);
+      setMensajeToast('Usuario actualizado');
+      setMostrarToast(true);
+      setShowEditarUsuario(false);
+      cargarUsuarios();
+    } catch (err) {
+      setMensajeToast('❌ Error al actualizar usuario');
+      setMostrarToast(true);
+    }
+  }, [usuarioEditando, cargarUsuarios]);
+
+  // Elimina un usuario
+  const eliminarUsuario = useCallback(async (id) => {
     if (confirm('¿Eliminar este usuario?')) {
       try {
         await apiDelete(`usuarios/${id}`);
@@ -209,28 +235,13 @@ const AdminDashboard = () => {
         setMostrarToast(true);
       }
     }
-  };
-
-  // Nuevo useEffect optimizado para cargar recompensas y jugadores solo cuando torneos cambien realmente
-  useEffect(() => {
-    if (torneos.length > 0) {
-      const prevTorneos = prevTorneosRef.current;
-      const hasChanged =
-        torneos.length !== prevTorneos.length ||
-        torneos.some((t, i) => t.id !== prevTorneos[i]?.id || t.estado !== prevTorneos[i]?.estado);
-
-      if (hasChanged) {
-        cargarRecompensas();
-        cargarJugadoresPorTorneo();
-        prevTorneosRef.current = torneos;
-      }
-    }
-  }, [torneos]);
-
-  useEffect(() => {
-    cargarTorneos();
-    cargarUsuarios();
   }, []);
+
+  // Carga inicial al montar el componente
+  useEffect(() => {
+    cargarTodo();
+    cargarUsuarios();
+  }, [cargarTodo, cargarUsuarios]);
 
   return (
     <TorneoLayout>
@@ -383,6 +394,7 @@ const AdminDashboard = () => {
           </Col>
         </Row>
 
+
         <FormularioTorneo
           show={mostrarFormulario}
           handleClose={cerrarFormulario}
@@ -395,15 +407,19 @@ const AdminDashboard = () => {
           show={showRecompensa}
           handleClose={() => setShowRecompensa(false)}
           torneoId={torneoSeleccionado?.id}
-          onSave={() => {
+          onSave={async () => {
             setShowRecompensa(false);
-            cargarRecompensas();
+            if (torneoSeleccionado?.id) {
+              await recargarRecompensasDeTorneo(torneoSeleccionado.id);
+              setMensajeToast('🎁 Recompensa añadida correctamente');
+              setMostrarToast(true);
+            }
           }}
         />
 
         {/* Modal editar usuario */}
         <Modal show={showEditarUsuario} onHide={() => setShowEditarUsuario(false)} centered>
-          <Modal.Header closeButton style={{ backgroundColor: '#1c1c1c', color: '#FFD700' }} closeVariant="white">
+          <Modal.Header closeButton style={{ backgroundColor: '#1c1c1c', color: '#FFD700' }}closeVariant="white">
             <Modal.Title>Editar Usuario</Modal.Title>
           </Modal.Header>
           <Modal.Body style={{ backgroundColor: '#1c1c1c', color: '#F8F4E3' }}>
@@ -437,9 +453,8 @@ const AdminDashboard = () => {
           </Modal.Body>
         </Modal>
 
-        {/* Modal gestión ronda */}
         <Modal show={mostrarModalRonda} onHide={() => setMostrarModalRonda(false)} centered size="lg">
-          <Modal.Header closeButton style={{ backgroundColor: '#1c1c1c', color: '#FFD700' }} closeVariant="white">
+          <Modal.Header closeButton style={{ backgroundColor: '#1c1c1c', color: '#FFD700' }}closeVariant="white">
             <Modal.Title>Gestión de Ronda</Modal.Title>
           </Modal.Header>
           <Modal.Body style={{ backgroundColor: '#1c1c1c', color: '#F8F4E3' }}>
@@ -481,6 +496,7 @@ const AdminDashboard = () => {
             </Button>
           </Modal.Body>
         </Modal>
+
 
         <ToastContainer position="bottom-end" className="p-3">
           <Toast bg="success" onClose={() => setMostrarToast(false)} show={mostrarToast} delay={3000} autohide>

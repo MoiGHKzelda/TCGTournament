@@ -13,32 +13,31 @@ const FormularioTorneo = ({ show, handleClose, onSubmit, modo = 'crear', torneo 
   });
   
   useEffect(() => {
-    if (show) {
-      if (torneo) {
-        setFormData({
-          nombre: torneo.nombre || '',
-          descripcion: torneo.descripcion || '',
-          fecha: torneo.fecha ? torneo.fecha.split('T')[0] : '',
-          hora: torneo.hora || '',
-          formato: torneo.formato || '',
-          max_jugadores: torneo.max_jugadores || 8
-        });
-      } else {
-        setFormData({
-          nombre: '',
-          descripcion: '',
-          fecha: '',
-          hora: '',
-          formato: '',
-          max_jugadores: 8
-        });
-      }
+    if (show && torneo) {
+      setFormData({
+        nombre: torneo.nombre || '',
+        descripcion: torneo.descripcion || '',
+        fecha: torneo.fecha ? torneo.fecha.split('T')[0] : '',
+        hora: torneo.hora || '',
+        formato: torneo.formato || '',
+        max_jugadores: torneo.max_jugadores || 8
+      });
+    } else if (show && !torneo) {
+      setFormData({
+        nombre: '',
+        descripcion: '',
+        fecha: '',
+        hora: '',
+        formato: '',
+        max_jugadores: 8
+      });
     }
   }, [show, torneo]);
+  
+  
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
@@ -46,12 +45,12 @@ const FormularioTorneo = ({ show, handleClose, onSubmit, modo = 'crear', torneo 
     try {
       let response;
       if (modo === 'editar' && torneo?.id) {
+        console.log('formData enviado:', formData);
         response = await apiPut(`torneos/${torneo.id}`, formData);
       } else {
         response = await apiPost('torneos', formData);
       }
       onSubmit(response);
-      // Solo cerrar si la petición fue exitosa
       handleClose();
     } catch (error) {
       alert('Error al guardar el torneo');
@@ -76,14 +75,7 @@ const FormularioTorneo = ({ show, handleClose, onSubmit, modo = 'crear', torneo 
           </Form.Group>
           <Form.Group className="mb-3">
             <Form.Label>Fecha</Form.Label>
-            <Form.Control
-              name="fecha"
-              type="date"
-              value={formData.fecha}
-              onChange={handleChange}
-              min={new Date().toISOString().split('T')[0]}
-              required
-            />
+            <Form.Control name="fecha" type="date" value={formData.fecha} onChange={handleChange} min={new Date().toISOString().split('T')[0]} required/>
           </Form.Group>
           <Form.Group className="mb-3">
             <Form.Label>Hora</Form.Label>

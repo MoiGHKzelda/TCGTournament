@@ -5,47 +5,38 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\TorneoJugador;
 use App\Models\Torneo;
-use Illuminate\Support\Facades\DB;
 
 class TorneoJugadorController extends Controller
 {
-   
-
     public function inscribirse($id)
     {
         $usuario = auth()->user();
 
-        return \DB::transaction(function () use ($usuario, $id) {
-            $existe = TorneoJugador::where('usuario_id', $usuario->id)
-                ->where('torneo_id', $id)
-                ->exists();
+        // Validar si ya está inscrito
+        $existe = TorneoJugador::where('usuario_id', $usuario->id)
+            ->where('torneo_id', $id)
+            ->exists();
 
-            if ($existe) {
-                return response()->json(['message' => 'Ya inscrito'], 409);
-            }
+        if ($existe) {
+            return response()->json(['message' => 'Ya inscrito'], 409);
+        }
 
-            $torneo = Torneo::lockForUpdate()->findOrFail($id);
+        // Validar si hay plazas disponibles
+        $torneo = Torneo::findOrFail($id);
+        $inscritos = TorneoJugador::where('torneo_id', $id)->count();
 
-            if ($torneo->estado !== 'inscripcion') {
-                return response()->json(['message' => 'No se puede inscribir, torneo cerrado'], 403);
-            }
+        if ($inscritos >= $torneo->max_jugadores) {
+            return response()->json(['message' => 'No hay plazas disponibles'], 403);
+        }
 
-            $inscritos = TorneoJugador::where('torneo_id', $id)->count();
+        // Crear inscripción
+        TorneoJugador::create([
+            'usuario_id' => $usuario->id,
+            'torneo_id' => $id
+        ]);
 
-            if ($inscritos >= $torneo->max_jugadores) {
-                return response()->json(['message' => 'No hay plazas disponibles'], 403);
-            }
-
-            TorneoJugador::create([
-                'usuario_id' => $usuario->id,
-                'torneo_id' => $id
-            ]);
-
-            return response()->json(['message' => 'Inscripción correcta'], 201);
-        });
+        return response()->json(['message' => 'Inscripción correcta']);
     }
-
-
 
     public function desinscribirse($id)
     {

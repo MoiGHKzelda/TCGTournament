@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Button, Card, Container, Modal, Form } from 'react-bootstrap';
 import { apiGet, apiPost } from '../../services/api';
 import TorneoLayout from '../User/TorneoLayout';
@@ -19,19 +19,28 @@ const ForoGeneral = () => {
     padre_id: null
   });
 
-  const fetchData = async (endpoint, setter, defaultValue = []) => {
-    try {
-      const data = await apiGet(endpoint);
-      setter(data);
-    } catch (error) {
-      console.error(`❌ Error cargando ${endpoint}:`, error);
-      setter(defaultValue);
-    }
-  };
-
+  // Cargar datos iniciales
   useEffect(() => {
-    fetchData('anuncios', setComentarios);
-    fetchData('torneos', setTorneos);
+    cargarComentarios();
+    cargarTorneos();
+  }, []);
+
+  const cargarComentarios = useCallback(() => {
+    apiGet('anuncios')
+      .then(setComentarios)
+      .catch((err) => {
+        console.error('❌ Error cargando anuncios:', err);
+        setComentarios([]);
+      });
+  }, []);
+
+  const cargarTorneos = useCallback(() => {
+    apiGet('torneos')
+      .then(setTorneos)
+      .catch((err) => {
+        console.error('❌ Error cargando torneos:', err);
+        setTorneos([]);
+      });
   }, []);
 
   const handleChange = (e) => {
@@ -55,7 +64,6 @@ const ForoGeneral = () => {
       setNuevoComentario({ titulo: '', contenido: '', torneo_id: '', padre_id: null });
     } catch (error) {
       alert('Error al publicar');
-      console.error(error);
     }
   };
 
@@ -95,13 +103,7 @@ const ForoGeneral = () => {
                   <img
                     src={`/img/${comentario.usuario?.avatar || 'avatar_1.png'}`}
                     alt="Avatar"
-                    style={{
-                      width: '45px',
-                      height: '45px',
-                      borderRadius: '50%',
-                      objectFit: 'cover',
-                      border: '2px solid #B22222'
-                    }}
+                    style={{ width: '45px', height: '45px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #B22222' }}
                   />
                   <div>
                     <strong style={{ color: '#FFD700' }}>{comentario.usuario?.nombre}</strong>
@@ -111,12 +113,7 @@ const ForoGeneral = () => {
                   </div>
                 </div>
                 <Card.Title className="mt-3" style={{ color: '#FFD700' }}>{comentario.titulo}</Card.Title>
-                <Card.Text style={{
-                  border: '1px solid #B22222',
-                  padding: '0.5rem',
-                  backgroundColor: '#1c1c1c',
-                  color: '#F8F4E3'
-                }}>
+                <Card.Text style={{ border: '1px solid #B22222', padding: '0.5rem', backgroundColor: '#1c1c1c', color: '#F8F4E3' }}>
                   {comentario.contenido}
                 </Card.Text>
                 <div className="d-flex gap-2">
@@ -136,13 +133,7 @@ const ForoGeneral = () => {
                           <img
                             src={`/img/${res.usuario?.avatar || 'avatar_1.png'}`}
                             alt="Avatar"
-                            style={{
-                              width: '40px',
-                              height: '40px',
-                              borderRadius: '50%',
-                              objectFit: 'cover',
-                              border: '2px solid #B22222'
-                            }}
+                            style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #B22222' }}
                           />
                           <div>
                             <strong style={{ color: '#FFD700' }}>{res.usuario?.nombre}</strong>
@@ -157,6 +148,7 @@ const ForoGeneral = () => {
             </Card>
           ))}
         </div>
+
         <Modal show={showModal} onHide={() => setShowModal(false)} centered>
           <Modal.Header closeButton closeVariant="white" style={{ backgroundColor: '#1c1c1c', color: '#FFD700' }}>
             <Modal.Title>{comentarioActual ? 'Responder Comentario' : 'Nuevo Comentario'}</Modal.Title>

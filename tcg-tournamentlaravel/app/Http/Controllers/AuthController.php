@@ -48,10 +48,18 @@ class AuthController extends Controller
             return response()->json(['message' => 'Credenciales inválidas'], 401);
         }
 
-        $user = Usuario::with('perfil')->find(Auth::id());
+        $user = Auth::user();
 
         if (!$user) {
             return response()->json(['error' => 'Usuario no encontrado tras login'], 500);
+        }
+
+        try {
+            $user->loadMissing('perfil');
+        } catch (\Throwable $e) {
+            return response()->json([
+                'error' => 'Error cargando perfil: ' . $e->getMessage()
+            ], 500);
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -62,4 +70,5 @@ class AuthController extends Controller
             'user' => $user
         ]);
     }
+
 }
