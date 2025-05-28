@@ -77,88 +77,88 @@ const ForoGeneral = () => {
 
   return (
     <TorneoLayout>
-      <Container className="py-4" style={{ backgroundColor: '#121212', minHeight: '100vh' }}>
+      <Container fluid className="py-4" style={{ backgroundColor: '#121212', height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column'}}>
         <h2 className="text-center mb-4" style={{ color: '#FFD700', fontFamily: 'Cinzel, serif' }}>
           Foro General
         </h2>
+        <div style={{flex: 1, overflowY: 'auto', paddingRight: '10px', paddingBottom: '100px' }}>
+          <div className="text-end mb-3">
+            <Button onClick={abrirModalComentario} style={{ backgroundColor: '#B22222', border: 'none', color: '#FFD700' }}>
+              + Añadir Comentario
+            </Button>
+          </div>
 
-        <div className="text-end mb-3">
-          <Button onClick={abrirModalComentario} style={{ backgroundColor: '#B22222', border: 'none', color: '#FFD700' }}>
-            + Añadir Comentario
-          </Button>
-        </div>
-
-        {comentarios.map((comentario) => (
-          <Card key={comentario.id} className="mb-4" style={{ backgroundColor: '#1c1c1c', border: '1px solid #FFD700' }}>
-            <Card.Body>
-              <div className="d-flex align-items-center gap-3">
-                <img
-                  src={`/img/${comentario.usuario?.avatar || 'avatar_1.png'}`}
-                  alt="Avatar"
-                  style={{
-                    width: '45px',
-                    height: '45px',
-                    borderRadius: '50%',
-                    objectFit: 'cover',
-                    border: '2px solid #B22222'
-                  }}
-                />
-                <div>
-                  <strong style={{ color: '#FFD700' }}>{comentario.usuario?.nombre}</strong>
-                  <div style={{ color: '#AAA', fontSize: '0.8em' }}>
-                    Torneo: {comentario.torneo?.nombre || 'General'}
+          {comentarios.map((comentario) => (
+            <Card key={comentario.id} className="mb-4" style={{ backgroundColor: '#1c1c1c', border: '1px solid #FFD700' }}>
+              <Card.Body>
+                <div className="d-flex align-items-center gap-3">
+                  <img
+                    src={`/img/${comentario.usuario?.avatar || 'avatar_1.png'}`}
+                    alt="Avatar"
+                    style={{
+                      width: '45px',
+                      height: '45px',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: '2px solid #B22222'
+                    }}
+                  />
+                  <div>
+                    <strong style={{ color: '#FFD700' }}>{comentario.usuario?.nombre}</strong>
+                    <div style={{ color: '#AAA', fontSize: '0.8em' }}>
+                      Torneo: {comentario.torneo?.nombre || 'General'}
+                    </div>
                   </div>
                 </div>
-              </div>
-              <Card.Title className="mt-3" style={{ color: '#FFD700' }}>{comentario.titulo}</Card.Title>
-              <Card.Text style={{
-                border: '1px solid #B22222',
-                padding: '0.5rem',
-                backgroundColor: '#1c1c1c',
-                color: '#F8F4E3'
-              }}>
-                {comentario.contenido}
-              </Card.Text>
-              <div className="d-flex gap-2">
-                <Button variant="warning" size="sm" onClick={() => toggleExpandido(comentario.id)}>
-                  {comentario.respuestas?.length || 0} Respuestas
-                </Button>
-                <Button variant="secondary" size="sm" onClick={() => abrirModalRespuesta(comentario)}>
-                  Responder
-                </Button>
-              </div>
-
-              {expandido[comentario.id] && comentario.respuestas?.length > 0 && (
-                <div className="mt-3 ms-4">
-                  {comentario.respuestas.map(res => (
-                    <Card key={res.id} className="mb-2" style={{ backgroundColor: '#1c1c1c', border: '1px solid #B22222' }}>
-                      <Card.Body className="d-flex align-items-start gap-3">
-                        <img
-                          src={`/img/${res.usuario?.avatar || 'avatar_1.png'}`}
-                          alt="Avatar"
-                          style={{
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '50%',
-                            objectFit: 'cover',
-                            border: '2px solid #B22222'
-                          }}
-                        />
-                        <div>
-                          <strong style={{ color: '#FFD700' }}>{res.usuario?.nombre}</strong>
-                          <Card.Text style={{ color: '#F8F4E3', marginTop: '0.3rem' }}>{res.contenido}</Card.Text>
-                        </div>
-                      </Card.Body>
-                    </Card>
-                  ))}
+                <Card.Title className="mt-3" style={{ color: '#FFD700' }}>{comentario.titulo}</Card.Title>
+                <Card.Text style={{
+                  border: '1px solid #B22222',
+                  padding: '0.5rem',
+                  backgroundColor: '#1c1c1c',
+                  color: '#F8F4E3'
+                }}>
+                  {comentario.contenido}
+                </Card.Text>
+                <div className="d-flex gap-2">
+                  <Button variant="warning" size="sm" onClick={() => toggleExpandido(comentario.id)}>
+                    {comentario.respuestas?.length || 0} Respuestas
+                  </Button>
+                  <Button variant="secondary" size="sm" onClick={() => abrirModalRespuesta(comentario)}>
+                    Responder
+                  </Button>
                 </div>
-              )}
-            </Card.Body>
-          </Card>
-        ))}
 
+                {expandido[comentario.id] && comentario.respuestas?.length > 0 && (
+                  <div className="mt-3 ms-4">
+                    {comentario.respuestas.map(res => (
+                      <Card key={res.id} className="mb-2" style={{ backgroundColor: '#1c1c1c', border: '1px solid #B22222' }}>
+                        <Card.Body className="d-flex align-items-start gap-3">
+                          <img
+                            src={`/img/${res.usuario?.avatar || 'avatar_1.png'}`}
+                            alt="Avatar"
+                            style={{
+                              width: '40px',
+                              height: '40px',
+                              borderRadius: '50%',
+                              objectFit: 'cover',
+                              border: '2px solid #B22222'
+                            }}
+                          />
+                          <div>
+                            <strong style={{ color: '#FFD700' }}>{res.usuario?.nombre}</strong>
+                            <Card.Text style={{ color: '#F8F4E3', marginTop: '0.3rem' }}>{res.contenido}</Card.Text>
+                          </div>
+                        </Card.Body>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </Card.Body>
+            </Card>
+          ))}
+        </div>
         <Modal show={showModal} onHide={() => setShowModal(false)} centered>
-          <Modal.Header closeButton style={{ backgroundColor: '#1c1c1c', color: '#FFD700' }}>
+        <Modal.Header closeButton closeVariant="white" style={{ backgroundColor: '#1c1c1c', color: '#FFD700' }}>
             <Modal.Title>{comentarioActual ? 'Responder Comentario' : 'Nuevo Comentario'}</Modal.Title>
           </Modal.Header>
           <Modal.Body style={{ backgroundColor: '#1c1c1c', color: '#F8F4E3' }}>

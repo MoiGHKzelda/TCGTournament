@@ -14,6 +14,7 @@ use App\Models\Perfil;
 
 
 
+
 class TorneoController extends Controller
 {
     /**
@@ -133,29 +134,14 @@ class TorneoController extends Controller
     }
 
 
-    public function partidasActuales($id)
-    {
-        $rondaActual = Partida::where('torneo_id', $id)->max('ronda') ?? 1;
-
-        $partidas = Partida::where('torneo_id', $id)
-            ->where('ronda', $rondaActual)
-            ->with(['jugador1', 'jugador2']) // importante para evitar N+1
-            ->get()
-            ->map(function ($p) {
-                return [
-                    'id' => $p->id,
-                    'jugador1' => $p->jugador1,
-                    'jugador2' => $p->jugador2,
-                    'ganador_id' => $p->ganador_id,
-                    'resultado' => $p->resultado,
-                ];
-            });
-
-        return response()->json($partidas);
-    }
-
     public function guardarGanadores(Request $request, $id)
     {
+        $torneo = Torneo::findOrFail($id);
+
+        if ($torneo->estado === 'finalizado') {
+            return response()->json(['message' => 'Este torneo ya fue finalizado.'], 400);
+        }
+
         $ganadores = $request->input('ganadores');
 
         foreach ($ganadores as $partidaId => $ganadorId) {
@@ -165,48 +151,35 @@ class TorneoController extends Controller
                 $partida->ganador_id = $ganadorId;
                 $partida->resultado = "Ganó usuario $ganadorId";
                 $partida->save();
-
-                // Sumar torneos jugados a ambos jugadores si no se han contado aún
-                foreach ([$partida->jugador1_id, $partida->jugador2_id] as $jugadorId) {
-                    if ($jugadorId) {
-                        $perfil = Perfil::where('usuario_id', $jugadorId)->first();
-                        if ($perfil) {
-                            $perfil->increment('torneos_jugados');
-                        }
-                    }
-                }
             }
         }
 
         $rondaActual = Partida::where('torneo_id', $id)->max('ronda');
 
-        // Obtener ganadores de la ronda actual
         $ganadorIds = Partida::where('torneo_id', $id)
             ->where('ronda', $rondaActual)
             ->pluck('ganador_id')
-            ->filter();
+            ->filter()
+            ->unique();
 
-        $ganadoresUsuarios = Usuario::whereIn('id', $ganadorIds)->get();
-
-        // Si queda un solo ganador, finaliza el torneo
-        if ($ganadoresUsuarios->count() === 1) {
-            $torneo = Torneo::findOrFail($id);
+        if ($ganadorIds->count() === 1) {
+            $ganadorId = $ganadorIds->first();
             $torneo->estado = 'finalizado';
             $torneo->save();
 
-            $ganador = $ganadoresUsuarios->first();
-            $perfil = $ganador->perfil;
-            if ($perfil) {
-                $perfil->increment('torneos_ganados');
+            $ganador = Usuario::find($ganadorId);
+            if ($ganador && $ganador->perfil) {
+                $ganador->perfil->increment('torneos_ganados');
             }
 
             return response()->json([
-                'message' => '¡Torneo finalizado! El ganador es ' . $ganador->nombre,
-                'ganador_id' => $ganador->id
+                'message' => '¡Torneo finalizado! El ganador es ' . ($ganador->nombre ?? 'desconocido'),
+                'ganador_id' => $ganadorId
             ]);
         }
 
-        // Si quedan más de uno, crear nueva ronda
+        // Nueva ronda
+        $ganadoresUsuarios = Usuario::whereIn('id', $ganadorIds)->get();
         $nuevaRonda = $rondaActual + 1;
         $parejas = $ganadoresUsuarios->chunk(2);
 
@@ -227,12 +200,6 @@ class TorneoController extends Controller
                     'ronda' => $nuevaRonda,
                     'resultado' => 'Pasa automáticamente',
                 ]);
-
-                // También sumar torneo jugado al que pasa automático
-                $perfil = Perfil::where('usuario_id', $par[0]->id)->first();
-                if ($perfil) {
-                    $perfil->increment('torneos_jugados');
-                }
             }
         }
 
@@ -298,6 +265,20 @@ class TorneoController extends Controller
 
         return response()->json(['message' => 'Torneo iniciado correctamente.']);
     }
+    
+
+    public function partidasActuales($id)
+    {
+        $rondaActual = Partida::where('torneo_id', $id)->max('ronda');
+
+        $partidas = Partida::with(['jugador1', 'jugador2'])
+            ->where('torneo_id', $id)
+            ->where('ronda', $rondaActual)
+            ->get();
+
+        return response()->json($partidas);
+    }
+
 
 
 

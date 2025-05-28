@@ -165,60 +165,72 @@ useEffect(() => {
       <Container fluid className="py-5" style={{ backgroundColor: '#121212', color: '#F8F4E3', minHeight: '100vh' }}>
         <h2 className="text-center mb-4" style={{ color: '#FFD700', fontFamily: 'Cinzel, serif' }}>Vista General</h2>
         <Row className="align-items-start">
-          <Col md={8}>
+        <Col md={8} style={{height: 'calc(100vh - 160px)', overflowY: 'auto', paddingRight: '15px',}}>
+          <div style={{ paddingBottom: '100px' }}>
             <h2 className="mb-4 text-center" style={{ color: '#FFD700' }}>TORNEOS DISPONIBLES</h2>
-            {torneos.map(torneo => {
-              const inscritos = jugadoresPorTorneo[torneo.id] || 0;
-              const maximo = torneo.max_jugadores || 8;
-              const recompensasTorneo = recompensas.filter(r => r.torneo_id === torneo.id);
+            {torneos.filter(t => t.estado !== 'finalizado').length === 0 ? (
+              <div className="text-center mt-4">
+                <h5 style={{ color: '#ccc' }}>⏳ Se están creando los torneos... ¡Vuelve pronto!</h5>
+              </div>
+            ) : (
+              torneos
+                .sort((a, b) => b.id - a.id)
+                .filter(t => t.estado !== 'finalizado')
+                .map(torneo => {
+                  const inscritos = jugadoresPorTorneo[torneo.id] || 0;
+                  const maximo = torneo.max_jugadores || 8;
+                  const recompensasTorneo = recompensas.filter(r => r.torneo_id === torneo.id);
 
-              return (
-                <Card key={torneo.id} className="mb-3" style={{ backgroundColor: '#1c1c1c', color: '#F8F4E3', border: '2px solid #B22222' }}>
-                  <Card.Body className="text-center">
-                    <Card.Title style={{ color: '#B22222' }}>{torneo.nombre}</Card.Title>
-                    <Card.Subtitle style={{ color: '#fff' }}>{torneo.fecha} — {torneo.formato}</Card.Subtitle>
-                    <p>{inscritos}/{maximo} jugadores apuntados</p>
-                    <div>
-                      <strong style={{ color: '#FFD700' }}>Recompensas:</strong>
-                      {recompensasTorneo.length > 0 ? (
-                        recompensasTorneo.map(r => (
-                          <div key={r.id} className="d-flex align-items-center justify-content-center gap-2 mt-2">
-                            <img
-                              src={r.imagen_url || 'https://via.placeholder.com/40'}
-                              alt={r.nombre_carta}
-                              style={{ width: 40, height: 56, border: '1px solid #FFD700', cursor: 'pointer' }}
-                              onClick={() => {
-                                setCartaSeleccionada(r);
-                                setMostrarModalCarta(true);
-                              }}
-                            />
-                            <span>{r.puesto}º - {r.nombre_carta} ({r.rareza})</span>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-light">Sin recompensas</p>
-                      )}
-                    </div>
-                    <div className="mt-3">
-                      <Button variant="outline-warning" size="sm" onClick={() => abrirModalInfo(torneo)}>Ver más info</Button>{' '}
-                      {torneo.estado === 'inscripcion' && (
-                        estaInscrito(torneo.id) ? (
-                          <Button variant="outline-danger" size="sm" onClick={() => handleDesinscribirse(torneo.id)}>
-                            Desinscribirse
-                          </Button>
-                        ) : inscritos < maximo ? (
-                          <Button variant="outline-success" size="sm" onClick={() => handleApuntarse(torneo.id)}>
-                            Apuntarse
-                          </Button>
+
+                return (
+                  <Card key={torneo.id} className="mb-3" style={{ backgroundColor: '#1c1c1c', color: '#F8F4E3', border: '2px solid #B22222' }}>
+                    <Card.Body className="text-center">
+                      <Card.Title style={{ color: '#B22222' }}>{torneo.nombre}</Card.Title>
+                      <Card.Subtitle style={{ color: '#fff' }}>{torneo.fecha} — {torneo.formato}</Card.Subtitle>
+                      <p>{inscritos}/{maximo} jugadores apuntados</p>
+                      <div>
+                        <strong style={{ color: '#FFD700' }}>Recompensas:</strong>
+                        {recompensasTorneo.length > 0 ? (
+                          recompensasTorneo.map(r => (
+                            <div key={r.id} className="d-flex align-items-center justify-content-center gap-2 mt-2">
+                              <img
+                                src={r.imagen_url || 'https://via.placeholder.com/40'}
+                                alt={r.nombre_carta}
+                                style={{ width: 40, height: 56, border: '1px solid #FFD700', cursor: 'pointer' }}
+                                onClick={() => {
+                                  setCartaSeleccionada(r);
+                                  setMostrarModalCarta(true);
+                                }}
+                              />
+                              <span>{r.puesto}º - {r.nombre_carta} ({r.rareza})</span>
+                            </div>
+                          ))
                         ) : (
-                          <span className="text-danger fw-bold">Cupo completo</span>
-                        )
-                      )}
-                    </div>
-                  </Card.Body>
-                </Card>
-              );
-            })}
+                          <p className="text-light">Sin recompensas</p>
+                        )}
+                      </div>
+                      <div className="mt-3">
+                        <Button variant="outline-warning" size="sm" onClick={() => abrirModalInfo(torneo)}>Ver más info</Button>{' '}
+                        {torneo.estado === 'inscripcion' && (
+                          estaInscrito(torneo.id) ? (
+                            <Button variant="outline-danger" size="sm" onClick={() => handleDesinscribirse(torneo.id)}>
+                              Desinscribirse
+                            </Button>
+                          ) : inscritos < maximo ? (
+                            <Button variant="outline-success" size="sm" onClick={() => handleApuntarse(torneo.id)}>
+                              Apuntarse
+                            </Button>
+                          ) : (
+                            <span className="text-danger fw-bold">Cupo completo</span>
+                          )
+                        )}
+                      </div>
+                    </Card.Body>
+                  </Card>
+                );
+              })
+            )}
+            </div>
           </Col>
           <Col md={4}>
             <Card style={{ backgroundColor: '#1c1c1c', color: '#F8F4E3', border: '1px solid #FFD700' }}>

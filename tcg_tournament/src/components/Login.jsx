@@ -24,6 +24,13 @@ const Login = () => {
       setTimeout(() => setRegistroExitoso(false), 4000);
     }
   }, [location.state]);
+  useEffect(() => {
+    if (mensaje) {
+      const timer = setTimeout(() => setMensaje(''), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [mensaje]);
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,9 +38,14 @@ const Login = () => {
       const data = await postLogin(email, password);
       login(data.user, data.access_token);
     } catch (error) {
-      setMensaje(error.message);
+      if (error?.response?.status === 401) {
+        setMensaje('Usuario o contraseña incorrectos.');
+      } else {
+        setMensaje('Usuario o contraseña incorrectos.');
+      }
     }
   };
+  
 
   if (user) {
     const destino = user.rol === 'admin' ? '/admin/dashboard' : '/usuario/inicio';
@@ -51,6 +63,11 @@ const Login = () => {
               {registroExitoso && (
                 <Alert variant="success">
                   ✅ Usuario registrado con éxito. Ya puedes iniciar sesión.
+                </Alert>
+              )}
+              {mensaje && (
+                <Alert variant="danger" onClose={() => setMensaje('')} dismissible>
+                  ❌ {mensaje}
                 </Alert>
               )}
               <Form onSubmit={handleSubmit}>

@@ -26,6 +26,26 @@ const AdminDashboard = () => {
   const [ganadoresSeleccionados, setGanadoresSeleccionados] = useState({});
   const [jugadoresPorTorneo, setJugadoresPorTorneo] = useState({});
 
+  const ordenarTorneos = (lista) => {
+    const prioridad = { activo: 0, inscripcion: 1, finalizado: 2 };
+    return [...lista].sort((a, b) => {
+      const prioridadA = prioridad[a.estado] ?? 3;
+      const prioridadB = prioridad[b.estado] ?? 3;
+      return prioridadA - prioridadB || b.id - a.id;
+    });
+  };
+
+  const cargarTorneos = async () => {
+    try {
+      const data = await apiGet('torneos');
+      const ordenados = ordenarTorneos(data);
+      setTorneos(ordenados);
+    } catch {
+      setMensajeToast('❌ Error al cargar torneos');
+      setMostrarToast(true);
+      setTorneos([]);
+    }
+  };
 
   const abrirFormulario = () => setMostrarFormulario(true);
   const cerrarFormulario = () => {
@@ -33,16 +53,9 @@ const AdminDashboard = () => {
     setTorneoEditando(null);
   };
 
-  const manejarGuardarTorneo = (torneoActualizado) => {
-    if (torneoEditando) {
-      setTorneos((prev) =>
-        prev.map((t) => (t.id === torneoActualizado.id ? torneoActualizado : t))
-      );
-      setMensajeToast('Torneo actualizado correctamente.');
-    } else {
-      setTorneos((prev) => [...prev, torneoActualizado]);
-      setMensajeToast('Torneo creado correctamente.');
-    }
+  const manejarGuardarTorneo = async () => {
+    await cargarTorneos();
+    setMensajeToast(torneoEditando ? 'Torneo actualizado correctamente.' : 'Torneo creado correctamente.');
     setMostrarToast(true);
     cerrarFormulario();
   };
@@ -51,7 +64,7 @@ const AdminDashboard = () => {
     if (confirm('¿Estás seguro de que deseas eliminar este torneo?')) {
       try {
         await apiDelete(`torneos/${id}`);
-        setTorneos((prev) => prev.filter((torneo) => torneo.id !== id));
+        await cargarTorneos();
         setMensajeToast('Torneo eliminado correctamente.');
         setMostrarToast(true);
       } catch {
@@ -63,12 +76,10 @@ const AdminDashboard = () => {
 
   const iniciarTorneo = async (id) => {
     if (!confirm('¿Estás seguro de que deseas iniciar este torneo?')) return;
-
     try {
       const res = await apiPost(`torneos/${id}/iniciar`);
       alert(res.message || 'Torneo iniciado');
-      const nuevos = await apiGet('torneos');
-      setTorneos(nuevos);
+      await cargarTorneos();
     } catch (error) {
       alert(error.message || '❌ Error al iniciar el torneo');
     }
@@ -85,19 +96,17 @@ const AdminDashboard = () => {
       setMostrarToast(true);
     }
   };
+
   const finalizarTorneo = async (id) => {
     if (!confirm('¿Estás seguro de que deseas finalizar este torneo?')) return;
-  
     try {
       const res = await apiPost(`torneos/${id}/finalizar`);
       alert(res.message || 'Torneo finalizado');
-      const actualizados = await apiGet('torneos');
-      setTorneos(actualizados);
+      await cargarTorneos();
     } catch (error) {
       alert(error.message || '❌ Error al finalizar el torneo');
     }
   };
-  
 
   const handleConfirmarGanadores = async () => {
     const faltan = partidasRonda.some(p => !ganadoresSeleccionados[p.id]);
@@ -105,25 +114,21 @@ const AdminDashboard = () => {
       alert('Debes seleccionar un ganador para todas las partidas.');
       return;
     }
-  
     try {
       await apiPost(`torneos/${torneoSeleccionado.id}/guardar-ganadores`, {
         ganadores: ganadoresSeleccionados
       });
-      await apiGet('user').then(setUsuario);
       setMensajeToast('Ganadores registrados y ronda actualizada');
       setMostrarToast(true);
       setMostrarModalRonda(false);
-  
-      // Actualizar lista de torneos
-      const nuevos = await apiGet('torneos');
-      setTorneos(nuevos);
+      await cargarTorneos();
     } catch (e) {
-      setMensajeToast('Error al guardar ganadores');
+      const msg = e?.response?.data?.message || 'Error al guardar ganadores';
+      setMensajeToast(`❌ ${msg}`);
       setMostrarToast(true);
-    }
+    }    
   };
-  
+
   const cargarRecompensas = async () => {
     try {
       const recompensasAll = [];
@@ -155,20 +160,6 @@ const AdminDashboard = () => {
     setJugadoresPorTorneo(conteos);
   };
 
-  const cargarPartidasRonda = async (torneoId) => {
-    try {
-      const partidas = await apiGet(`torneos/${torneoId}/partidas-actuales`);
-      setPartidasRonda(partidas);
-      setTorneoSeleccionado(torneos.find(t => t.id === torneoId));
-      setMostrarModalRonda(true);
-    } catch (e) {
-      setMensajeToast('❌ Error al cargar partidas');
-      setMostrarToast(true);
-    }
-  };
-  
-  
-
   const editarUsuario = async () => {
     try {
       await apiPut(`usuarios/${usuarioEditando.id}`, usuarioEditando);
@@ -181,6 +172,7 @@ const AdminDashboard = () => {
       setMostrarToast(true);
     }
   };
+
   const eliminarRecompensa = async (id) => {
     if (confirm('¿Eliminar esta recompensa?')) {
       try {
@@ -193,7 +185,7 @@ const AdminDashboard = () => {
         setMostrarToast(true);
       }
     }
-  };  
+  };
 
   const eliminarUsuario = async (id) => {
     if (confirm('¿Eliminar este usuario?')) {
@@ -210,13 +202,7 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
-    apiGet('torneos')
-    .then(data => {
-      const ordenados = [...data].sort((a, b) => new Date(b.id) - new Date(a.id));
-      setTorneos(ordenados);
-    })
-    .catch(() => setTorneos([]));
-
+    cargarTorneos();
     cargarUsuarios();
   }, []);
 
@@ -227,8 +213,6 @@ const AdminDashboard = () => {
     }
   }, [torneos]);
 
-
-
   return (
     <TorneoLayout>
       <Container fluid className="py-4" style={{ backgroundColor: '#121212', minHeight: '100vh', overflowX: 'hidden', paddingLeft: '15px', paddingRight: '15px', width: '100%',}}>
@@ -237,7 +221,7 @@ const AdminDashboard = () => {
         </h2>
         <Row>
           {/* Torneos */}
-          <Col md={8} style={{ maxHeight: '100vh', overflowY: 'auto', overflowX: 'hidden' }}>
+          <Col md={8} style={{ height: 'calc(100vh - 140px)', overflowY: 'auto', paddingRight: '15px',}}>
             <div className="text-end mb-4">
               <Button
                 onClick={abrirFormulario}
@@ -247,13 +231,13 @@ const AdminDashboard = () => {
               </Button>
             </div>
             
-            <div style={{ maxHeight: '100vh', overflowY: 'auto', paddingRight: '20px' }}>
+            <div style={{ paddingRight: '20px', paddingBottom: '100px' }}>
               <Row className="justify-content-start">
                 {torneos.map((torneo) => {
                   const recompensasTorneo = recompensas.filter(r => r.torneo_id === torneo.id);
                   return (
                     <Col md={12} key={torneo.id} className="mb-4">
-                      <Card style={{ backgroundColor: '#1c1c1c', color: '#F8F4E3', border: '1px solid #FFD700' }}>
+                      <Card style={{ backgroundColor: '#1c1c1c', color: '#F8F4E3', border: torneo.estado === 'finalizado' ? '2px solid gray' : '1px solid #FFD700', opacity: torneo.estado === 'finalizado' ? 0.7 : 1,}}>
                         <Card.Body>
                           <Card.Title className="text-center">{torneo.nombre}</Card.Title>
                           <Card.Subtitle className="mb-2 text-white text-center">
@@ -279,14 +263,27 @@ const AdminDashboard = () => {
                           </ListGroup>
                           <div className="d-flex flex-wrap justify-content-center gap-2 mt-3">
                             {torneo.estado === 'inscripcion' && (
-                              <Button
-                                variant="outline-warning"
-                                size="sm"
-                                onClick={() => iniciarTorneo(torneo.id)}
-                                disabled={(jugadoresPorTorneo[torneo.id] || 0) < 2}
-                              >
-                                Iniciar Torneo
-                              </Button>
+                              <>
+                                <Button
+                                  variant="outline-warning"
+                                  size="sm"
+                                  onClick={() => iniciarTorneo(torneo.id)}
+                                  disabled={(jugadoresPorTorneo[torneo.id] || 0) < 2}
+                                >
+                                  Iniciar Torneo
+                                </Button>
+                                <Button
+                                  variant="outline-success"
+                                  size="sm"
+                                  onClick={() => {
+                                    setTorneoSeleccionado(torneo);
+                                    setShowRecompensa(true);
+                                  }}
+                                  disabled={recompensasTorneo.length >= 3}
+                                >
+                                  Añadir Recompensa
+                                </Button>
+                              </>
                             )}
 
                             {torneo.estado === 'activo' && (
@@ -294,10 +291,7 @@ const AdminDashboard = () => {
                                 <Button
                                   variant="outline-light"
                                   size="sm"
-                                  onClick={() => {
-                                    setTorneoSeleccionado(torneo);
-                                    cargarPartidasRonda(torneo.id);
-                                  }}
+                                  onClick={() => pasarRonda(torneo.id)}
                                 >
                                   Pasar Ronda
                                 </Button>
@@ -308,19 +302,14 @@ const AdminDashboard = () => {
                                 >
                                   Finalizar Torneo
                                 </Button>
-                                <Button
-                                  variant="outline-success"
-                                  size="sm"
-                                  onClick={() => {
-                                    const ganadorId = prompt('Ingresa el ID del jugador ganador:');
-                                    if (ganadorId) asignarGanadorDelTorneo(torneo.id, ganadorId);
-                                  }}
-                                >
-                                  Asignar Ganador del Torneo
-                                </Button>
                               </>
                             )}
 
+                            {torneo.estado === 'finalizado' && (
+                              <span className="text-warning fw-bold">🏁 Torneo Finalizado</span>
+                            )}
+
+                            {/* Estos botones siempre disponibles */}
                             <Button
                               variant="outline-info"
                               size="sm"
@@ -338,17 +327,6 @@ const AdminDashboard = () => {
                             >
                               Eliminar
                             </Button>
-                            <Button
-                              variant="outline-success"
-                              size="sm"
-                              onClick={() => {
-                                setTorneoSeleccionado(torneo);
-                                setShowRecompensa(true);
-                              }}
-                              disabled={recompensasTorneo.length >= 3}
-                            >
-                              Añadir Recompensa
-                            </Button>
                           </div>
                         </Card.Body>
                       </Card>
@@ -360,9 +338,9 @@ const AdminDashboard = () => {
           </Col>
 
           {/* Usuarios */}
-          <Col md={4} style={{ maxHeight: '80vh', overflowY: 'auto', overflowX: 'hidden' }}>
+          <Col md={4} style={{ height: 'calc(100vh - 160px)', overflowY: 'auto', paddingLeft: '15px',}}>
             <h5 style={{ color: '#FFD700' }}>Gestión de Jugadores</h5>
-            <div style={{ maxHeight: '80vh', overflowY: 'auto', paddingRight: '10px' }}>
+            <div style={{ paddingRight: '10px', paddingBottom: '100px' }}>
               <ListGroup>
                 {usuarios.map((u) => (
                   <ListGroup.Item key={u.id} style={{ backgroundColor: '#1c1c1c', color: '#F8F4E3' }}>

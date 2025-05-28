@@ -13,17 +13,27 @@ const FormularioTorneo = ({ show, handleClose, onSubmit, modo = 'crear', torneo 
   });
   
   useEffect(() => {
-    if (show && !torneo) {
+    if (show && torneo) {
+      setFormData({
+        nombre: torneo.nombre || '',
+        descripcion: torneo.descripcion || '',
+        fecha: torneo.fecha ? torneo.fecha.split('T')[0] : '',
+        hora: torneo.hora || '',
+        formato: torneo.formato || '',
+        max_jugadores: torneo.max_jugadores || 8
+      });
+    } else if (show && !torneo) {
       setFormData({
         nombre: '',
         descripcion: '',
         fecha: '',
         hora: '',
         formato: '',
-        max_jugadores: 8,
+        max_jugadores: 8
       });
     }
   }, [show, torneo]);
+  
   
 
   const handleChange = (e) => {

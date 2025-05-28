@@ -14,17 +14,30 @@ const MdlRecompensa = ({ show, handleClose, torneoId, onSave }) => {
   const buscarCarta = async () => {
     setCargando(true);
     setMensaje('');
+    setResultados([]);
     try {
       const res = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(busqueda)}`);
+      
+      if (!res.ok) {
+        throw new Error('Carta no encontrada');
+      }
+  
       const data = await res.json();
-      setResultados(data.data || []);
+  
+      if (!data.data || data.data.length === 0) {
+        setMensaje('❌ No se encontró ninguna carta con ese nombre.');
+        return;
+      }
+  
+      setResultados(data.data);
     } catch (error) {
-      setMensaje('❌ Error al buscar carta');
+      setMensaje('❌ No se encontró ninguna carta con ese nombre.');
       console.error(error);
     } finally {
       setCargando(false);
     }
   };
+  
 
   const agregarRecompensa = async (carta) => {
     try {

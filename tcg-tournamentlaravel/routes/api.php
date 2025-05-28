@@ -53,6 +53,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/torneos/{id}/partidas-actuales', [TorneoController::class, 'partidasActuales']);
     Route::post('/torneos/{id}/finalizar', [TorneoController::class, 'finalizarTorneo']);
     Route::post('/torneos/{id}/ganador', [TorneoController::class, 'asignarGanador']);
+    Route::get('/torneos/{id}/partidas-actuales', [TorneoController::class, 'partidasActuales']);
+
 
     // Recursos RESTful
     Route::apiResource('usuarios', UsuarioController::class);
