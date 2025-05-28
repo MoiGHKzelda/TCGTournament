@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  laravel:
+    build:
+      context: ./tcg-tournamentlaravel
+      dockerfile: Dockerfile
+    container_name: laravel-app
+    working_dir: /var/www
+    volumes:
+      - ./tcg-tournamentlaravel:/var/www
+    ports:
+      - "8888:8888"
+    depends_on:
+      - react
+    environment:
+      - PORT=8888
+
+  react:
+    build:
+      context: ./tcg_tournament
+      dockerfile: Dockerfile
+    container_name: react-app
+    ports:
+      - "5173:5173"

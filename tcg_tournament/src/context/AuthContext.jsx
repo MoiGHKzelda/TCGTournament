@@ -1,24 +1,28 @@
-// ✅ AuthContext.jsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getUser } from '../services/api';
+import { getUser } from '../services/api'; // Asegúrate que esta función haga la petición a /api/user
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
-  const navigate = useNavigate();
-
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const tokenGuardado = localStorage.getItem('token');
-    if (tokenGuardado) {
+    const usuarioGuardado = localStorage.getItem('usuario');
+
+    if (tokenGuardado && usuarioGuardado) {
+      setToken(tokenGuardado);
+      setUser(JSON.parse(usuarioGuardado));
+      setLoading(false);
+    } else if (tokenGuardado) {
+      setToken(tokenGuardado);
       getUser()
-        .then(data => {
+        .then((data) => {
           setUser(data);
-          setToken(tokenGuardado);
           localStorage.setItem('usuario', JSON.stringify(data));
         })
         .catch(() => logout())
@@ -28,14 +32,12 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-
-  const login = (usuarioData, token) => {
+  const login = (usuarioData, tokenValue) => {
     setUser(usuarioData);
-    setToken(token);
+    setToken(tokenValue);
     localStorage.setItem('usuario', JSON.stringify(usuarioData));
-    localStorage.setItem('token', token);
+    localStorage.setItem('token', tokenValue);
   };
-  
 
   const logout = () => {
     setUser(null);
@@ -47,7 +49,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={{ user, token, login, logout, loading }}>
-      {children}
+      {!loading && children}
     </AuthContext.Provider>
   );
 };

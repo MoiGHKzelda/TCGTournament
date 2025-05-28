@@ -19,20 +19,19 @@ const ForoGeneral = () => {
     padre_id: null
   });
 
-  useEffect(() => {
-    apiGet('anuncios')
-      .then(setComentarios)
-      .catch((err) => {
-        console.error('❌ Error cargando anuncios:', err);
-        setComentarios([]);
-      });
+  const fetchData = async (endpoint, setter, defaultValue = []) => {
+    try {
+      const data = await apiGet(endpoint);
+      setter(data);
+    } catch (error) {
+      console.error(`❌ Error cargando ${endpoint}:`, error);
+      setter(defaultValue);
+    }
+  };
 
-    apiGet('torneos')
-      .then(setTorneos)
-      .catch((err) => {
-        console.error('❌ Error cargando torneos:', err);
-        setTorneos([]);
-      });
+  useEffect(() => {
+    fetchData('anuncios', setComentarios);
+    fetchData('torneos', setTorneos);
   }, []);
 
   const handleChange = (e) => {
@@ -56,6 +55,7 @@ const ForoGeneral = () => {
       setNuevoComentario({ titulo: '', contenido: '', torneo_id: '', padre_id: null });
     } catch (error) {
       alert('Error al publicar');
+      console.error(error);
     }
   };
 
@@ -158,7 +158,7 @@ const ForoGeneral = () => {
           ))}
         </div>
         <Modal show={showModal} onHide={() => setShowModal(false)} centered>
-        <Modal.Header closeButton closeVariant="white" style={{ backgroundColor: '#1c1c1c', color: '#FFD700' }}>
+          <Modal.Header closeButton closeVariant="white" style={{ backgroundColor: '#1c1c1c', color: '#FFD700' }}>
             <Modal.Title>{comentarioActual ? 'Responder Comentario' : 'Nuevo Comentario'}</Modal.Title>
           </Modal.Header>
           <Modal.Body style={{ backgroundColor: '#1c1c1c', color: '#F8F4E3' }}>

@@ -1,5 +1,4 @@
-// ✅ AdminDashboard.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   Button, Col, Row, Card, Container,
   Toast, ToastContainer, ListGroup, Modal, Form
@@ -25,6 +24,8 @@ const AdminDashboard = () => {
   const [partidasRonda, setPartidasRonda] = useState([]);
   const [ganadoresSeleccionados, setGanadoresSeleccionados] = useState({});
   const [jugadoresPorTorneo, setJugadoresPorTorneo] = useState({});
+
+  const prevTorneosRef = useRef([]);
 
   const ordenarTorneos = (lista) => {
     const prioridad = { activo: 0, inscripcion: 1, finalizado: 2 };
@@ -131,16 +132,18 @@ const AdminDashboard = () => {
 
   const cargarRecompensas = async () => {
     try {
-      const recompensasAll = [];
-      for (const torneo of torneos) {
-        const data = await apiGet(`torneos/${torneo.id}/recompensas`);
-        recompensasAll.push(...data.map(r => ({ ...r, torneo_id: torneo.id })));
-      }
+      const peticiones = torneos.map(torneo =>
+        apiGet(`torneos/${torneo.id}/recompensas`).then(data =>
+          data.map(r => ({ ...r, torneo_id: torneo.id }))
+        )
+      );
+      const recompensasAll = (await Promise.all(peticiones)).flat();
       setRecompensas(recompensasAll);
     } catch (error) {
       console.error('Error al cargar recompensas', error);
     }
   };
+  
 
   const cargarUsuarios = async () => {
     try {
@@ -152,13 +155,20 @@ const AdminDashboard = () => {
   };
 
   const cargarJugadoresPorTorneo = async () => {
-    const conteos = {};
-    for (const torneo of torneos) {
-      const jugadores = await apiGet(`torneos/${torneo.id}/jugadores`);
-      conteos[torneo.id] = jugadores.length;
+    try {
+      const resultados = await Promise.all(
+        torneos.map(async torneo => {
+          const jugadores = await apiGet(`torneos/${torneo.id}/jugadores`);
+          return { id: torneo.id, count: jugadores.length };
+        })
+      );
+      const conteos = Object.fromEntries(resultados.map(r => [r.id, r.count]));
+      setJugadoresPorTorneo(conteos);
+    } catch (error) {
+      console.error('Error cargando jugadores', error);
     }
-    setJugadoresPorTorneo(conteos);
   };
+  
 
   const editarUsuario = async () => {
     try {
@@ -201,17 +211,26 @@ const AdminDashboard = () => {
     }
   };
 
+  // Nuevo useEffect optimizado para cargar recompensas y jugadores solo cuando torneos cambien realmente
+  useEffect(() => {
+    if (torneos.length > 0) {
+      const prevTorneos = prevTorneosRef.current;
+      const hasChanged =
+        torneos.length !== prevTorneos.length ||
+        torneos.some((t, i) => t.id !== prevTorneos[i]?.id || t.estado !== prevTorneos[i]?.estado);
+
+      if (hasChanged) {
+        cargarRecompensas();
+        cargarJugadoresPorTorneo();
+        prevTorneosRef.current = torneos;
+      }
+    }
+  }, [torneos]);
+
   useEffect(() => {
     cargarTorneos();
     cargarUsuarios();
   }, []);
-
-  useEffect(() => {
-    if (torneos.length > 0) {
-      cargarRecompensas();
-      cargarJugadoresPorTorneo();
-    }
-  }, [torneos]);
 
   return (
     <TorneoLayout>
@@ -364,7 +383,6 @@ const AdminDashboard = () => {
           </Col>
         </Row>
 
-
         <FormularioTorneo
           show={mostrarFormulario}
           handleClose={cerrarFormulario}
@@ -385,7 +403,7 @@ const AdminDashboard = () => {
 
         {/* Modal editar usuario */}
         <Modal show={showEditarUsuario} onHide={() => setShowEditarUsuario(false)} centered>
-          <Modal.Header closeButton style={{ backgroundColor: '#1c1c1c', color: '#FFD700' }}closeVariant="white">
+          <Modal.Header closeButton style={{ backgroundColor: '#1c1c1c', color: '#FFD700' }} closeVariant="white">
             <Modal.Title>Editar Usuario</Modal.Title>
           </Modal.Header>
           <Modal.Body style={{ backgroundColor: '#1c1c1c', color: '#F8F4E3' }}>
@@ -419,8 +437,9 @@ const AdminDashboard = () => {
           </Modal.Body>
         </Modal>
 
+        {/* Modal gestión ronda */}
         <Modal show={mostrarModalRonda} onHide={() => setMostrarModalRonda(false)} centered size="lg">
-          <Modal.Header closeButton style={{ backgroundColor: '#1c1c1c', color: '#FFD700' }}closeVariant="white">
+          <Modal.Header closeButton style={{ backgroundColor: '#1c1c1c', color: '#FFD700' }} closeVariant="white">
             <Modal.Title>Gestión de Ronda</Modal.Title>
           </Modal.Header>
           <Modal.Body style={{ backgroundColor: '#1c1c1c', color: '#F8F4E3' }}>
@@ -462,7 +481,6 @@ const AdminDashboard = () => {
             </Button>
           </Modal.Body>
         </Modal>
-
 
         <ToastContainer position="bottom-end" className="p-3">
           <Toast bg="success" onClose={() => setMostrarToast(false)} show={mostrarToast} delay={3000} autohide>

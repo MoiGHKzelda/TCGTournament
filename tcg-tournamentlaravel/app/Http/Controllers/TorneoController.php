@@ -135,76 +135,80 @@ class TorneoController extends Controller
 
 
     public function guardarGanadores(Request $request, $id)
-    {
-        $torneo = Torneo::findOrFail($id);
+{
+    $torneo = Torneo::findOrFail($id);
 
-        if ($torneo->estado === 'finalizado') {
-            return response()->json(['message' => 'Este torneo ya fue finalizado.'], 400);
+    if ($torneo->estado === 'finalizado') {
+        return response()->json(['message' => 'Este torneo ya fue finalizado.'], 400);
+    }
+
+    $ganadores = $request->input('ganadores', []);
+    $partidaIds = array_keys($ganadores);
+
+    // Buscar todas las partidas de golpe para evitar N+1 queries
+    $partidas = Partida::whereIn('id', $partidaIds)->get()->keyBy('id');
+
+    foreach ($ganadores as $partidaId => $ganadorId) {
+        $partida = $partidas->get($partidaId);
+        if ($partida && in_array($ganadorId, [$partida->jugador1_id, $partida->jugador2_id])) {
+            $partida->ganador_id = $ganadorId;
+            $partida->resultado = "Ganó usuario $ganadorId";
+            $partida->save();
+        }
+    }
+
+    $rondaActual = Partida::where('torneo_id', $id)->max('ronda');
+
+    $ganadorIds = Partida::where('torneo_id', $id)
+        ->where('ronda', $rondaActual)
+        ->pluck('ganador_id')
+        ->filter()
+        ->unique();
+
+    if ($ganadorIds->count() === 1) {
+        $ganadorId = $ganadorIds->first();
+        $torneo->estado = 'finalizado';
+        $torneo->save();
+
+        $ganador = Usuario::find($ganadorId);
+        if ($ganador && $ganador->perfil) {
+            $ganador->perfil->increment('torneos_ganados');
         }
 
-        $ganadores = $request->input('ganadores');
+        return response()->json([
+            'message' => '¡Torneo finalizado! El ganador es ' . ($ganador->nombre ?? 'desconocido'),
+            'ganador_id' => $ganadorId
+        ]);
+    }
 
-        foreach ($ganadores as $partidaId => $ganadorId) {
-            $partida = Partida::find($partidaId);
+    // Nueva ronda: creación de partidas con ganadores
+    $ganadoresUsuarios = Usuario::whereIn('id', $ganadorIds)->get();
+    $nuevaRonda = $rondaActual + 1;
+    $parejas = $ganadoresUsuarios->chunk(2);
 
-            if ($partida && in_array($ganadorId, [$partida->jugador1_id, $partida->jugador2_id])) {
-                $partida->ganador_id = $ganadorId;
-                $partida->resultado = "Ganó usuario $ganadorId";
-                $partida->save();
-            }
-        }
-
-        $rondaActual = Partida::where('torneo_id', $id)->max('ronda');
-
-        $ganadorIds = Partida::where('torneo_id', $id)
-            ->where('ronda', $rondaActual)
-            ->pluck('ganador_id')
-            ->filter()
-            ->unique();
-
-        if ($ganadorIds->count() === 1) {
-            $ganadorId = $ganadorIds->first();
-            $torneo->estado = 'finalizado';
-            $torneo->save();
-
-            $ganador = Usuario::find($ganadorId);
-            if ($ganador && $ganador->perfil) {
-                $ganador->perfil->increment('torneos_ganados');
-            }
-
-            return response()->json([
-                'message' => '¡Torneo finalizado! El ganador es ' . ($ganador->nombre ?? 'desconocido'),
-                'ganador_id' => $ganadorId
+    foreach ($parejas as $par) {
+        if (count($par) === 2) {
+            Partida::create([
+                'torneo_id' => $id,
+                'jugador1_id' => $par[0]->id,
+                'jugador2_id' => $par[1]->id,
+                'ronda' => $nuevaRonda,
+            ]);
+        } elseif (count($par) === 1) {
+            Partida::create([
+                'torneo_id' => $id,
+                'jugador1_id' => $par[0]->id,
+                'jugador2_id' => null,
+                'ganador_id' => $par[0]->id,
+                'ronda' => $nuevaRonda,
+                'resultado' => 'Pasa automáticamente',
             ]);
         }
-
-        // Nueva ronda
-        $ganadoresUsuarios = Usuario::whereIn('id', $ganadorIds)->get();
-        $nuevaRonda = $rondaActual + 1;
-        $parejas = $ganadoresUsuarios->chunk(2);
-
-        foreach ($parejas as $par) {
-            if (count($par) === 2) {
-                Partida::create([
-                    'torneo_id' => $id,
-                    'jugador1_id' => $par[0]->id,
-                    'jugador2_id' => $par[1]->id,
-                    'ronda' => $nuevaRonda,
-                ]);
-            } elseif (count($par) === 1) {
-                Partida::create([
-                    'torneo_id' => $id,
-                    'jugador1_id' => $par[0]->id,
-                    'jugador2_id' => null,
-                    'ganador_id' => $par[0]->id,
-                    'ronda' => $nuevaRonda,
-                    'resultado' => 'Pasa automáticamente',
-                ]);
-            }
-        }
-
-        return response()->json(['message' => 'Ronda actualizada correctamente']);
     }
+
+    return response()->json(['message' => 'Ronda actualizada correctamente']);
+}
+
 
 
 
