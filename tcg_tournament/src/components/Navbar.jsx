@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import logo from '../assets/logo.png'; // Asegúrate de tener el logo aquí
+import logo from '../assets/logo.png';
 
 const Navbar = () => {
   const { user, logout, loading } = useAuth();

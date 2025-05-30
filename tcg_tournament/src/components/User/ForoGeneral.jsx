@@ -10,7 +10,6 @@ const ForoGeneral = () => {
   const [showModal, setShowModal] = useState(false);
   const [comentarioActual, setComentarioActual] = useState(null);
   const [expandido, setExpandido] = useState({});
-  const { user } = useAuth();
 
   const [nuevoComentario, setNuevoComentario] = useState({
     titulo: '',

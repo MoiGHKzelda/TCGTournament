@@ -1,4 +1,3 @@
-// ✅ MdlRecompensa.jsx - Optimizado
 import React, { useState, useCallback } from 'react';
 import { Modal, Button, Form, Row, Col, Card, Spinner } from 'react-bootstrap';
 import { apiPost } from '../../services/api';

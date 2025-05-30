@@ -1,4 +1,3 @@
-// ✅ AuthContext.jsx optimizado
 import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUser } from '../services/api';
