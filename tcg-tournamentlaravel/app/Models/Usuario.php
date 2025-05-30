@@ -54,10 +54,6 @@ class Usuario extends Authenticatable
     {
         return $this->hasMany(Partida::class, 'jugador2_id');
     }
-    public function hilos()
-    {
-        return $this->hasMany(HiloForo::class);
-    }
     public function anuncios()
     {
         return $this->hasMany(Anuncio::class);

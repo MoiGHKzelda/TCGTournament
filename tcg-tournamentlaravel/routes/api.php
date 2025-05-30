@@ -8,8 +8,6 @@ use App\Http\Controllers\PerfilController;
 use App\Http\Controllers\TorneoController;
 use App\Http\Controllers\TorneoJugadorController;
 use App\Http\Controllers\PartidaController;
-use App\Http\Controllers\HiloForoController;
-use App\Http\Controllers\MensajeForoController;
 use App\Http\Controllers\AnuncioController;
 use App\Http\Controllers\CartaRecompensaController;
 
@@ -62,8 +60,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('torneos', TorneoController::class);
     Route::apiResource('torneo-jugadores', TorneoJugadorController::class);
     Route::apiResource('partidas', PartidaController::class);
-    Route::apiResource('hilos', HiloForoController::class);
-    Route::apiResource('mensajes', MensajeForoController::class);
     Route::apiResource('anuncios', AnuncioController::class);
     Route::apiResource('recompensas', CartaRecompensaController::class);
 });
