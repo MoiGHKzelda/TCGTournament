@@ -58,7 +58,7 @@ Antes de comenzar, asegúrate de tener instalado lo siguiente:
 
 ### Clonar el repositorio
 
-3. Configurar Laravel
+## Configurar Laravel
 Ejecuta estos comandos dentro del contenedor Laravel:
 
 docker exec -it laravel-app bash
@@ -67,7 +67,7 @@ cp .env.example .env
 php artisan key:generate
 php artisan migrate
 
-Frontend (React + Vite)
+##Frontend (React + Vite)
 
 cd resources/js
 npm install
