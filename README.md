@@ -92,7 +92,6 @@ php artisan db:seed
 Comandos útiles React
 npm run build
 
-<<<<<<< HEAD
 Iniciar docker backend:
 docker build -t laravel-backend .
 docker run -d -p 8888:8888 --name laravel-container laravel-backend
@@ -101,6 +100,7 @@ Iniciar Frontend
 docker build -t react-app .
 docker run -d -p 5173:5173 --name react-app-container react-app
 =======
+
 # Iniciar docker backend:
 1º-docker build -t laravel-backend .
 2º-docker run -d -p 8888:8888 --name laravel-container laravel-backend
@@ -108,7 +108,6 @@ docker run -d -p 5173:5173 --name react-app-container react-app
 # Iniciar Frontend
 1º- docker build -t react-app .
 2º- docker run -d -p 5173:5173 --name react-app-container react-app
->>>>>>> b7ba7d9b082f777419285b298cdeb5caa2a58893
 
 # Usuario Admin:
 mail: admin@example.com
