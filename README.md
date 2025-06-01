@@ -26,22 +26,16 @@ Aplicación web para gestionar torneos de cartas estilo Magic: The Gathering, co
 - [x] Autenticación: Login y Registro en frontend
 - [x] Protecciones de rutas con autenticación
 - [x] Navegación con React Router y NavLink
-
----
-
-## 🛠️ Pendiente de desarrollo
-
-- [ ] Finalizar endpoints de autenticación (login, logout, tokens)
-- [ ] Validación en back de todos los formularios
-- [ ] Página de perfil de usuario
-- [ ] Gestión de torneos desde el frontend (crear, listar, participar)
-- [ ] Subida de mazos y decks por usuario
-- [ ] Sistema de recompensas y vinculación con torneos
-- [ ] Sistema de foros y comentarios
-- [ ] Dashboard de administración (Laravel o React)
-- [ ] Interfaz responsive + mejoras visuales (colores Mardu)
-- [ ] Logo final y diseño gráfico estilo medieval
-- [ ] Despliegue (Docker, Laravel Forge o Vercel)
+- [x] Finalizar endpoints de autenticación (login, logout, tokens)
+- [x] Validación en back de todos los formularios
+- [x] Vista de perfil de usuario
+- [x] Gestión de torneos desde el frontend (crear, listar, participar)
+- [x] Sistema de recompensas y vinculación con torneos
+- [x] Sistema de foros y comentarios
+- [x] Dashboard de administración (Laravel o React)
+- [x] Interfaz responsive + mejoras visuales (colores Mardu)
+- [x] Logo final y diseño gráfico estilo medieval
+- [x] Despliegue (Docker, Laravel Forge o Vercel)
 
 ---
 
