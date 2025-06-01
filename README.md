@@ -26,22 +26,16 @@ Aplicación web para gestionar torneos de cartas estilo Magic: The Gathering, co
 - [x] Autenticación: Login y Registro en frontend
 - [x] Protecciones de rutas con autenticación
 - [x] Navegación con React Router y NavLink
-
----
-
-## 🛠️ Pendiente de desarrollo
-
-- [ ] Finalizar endpoints de autenticación (login, logout, tokens)
-- [ ] Validación en back de todos los formularios
-- [ ] Página de perfil de usuario
-- [ ] Gestión de torneos desde el frontend (crear, listar, participar)
-- [ ] Subida de mazos y decks por usuario
-- [ ] Sistema de recompensas y vinculación con torneos
-- [ ] Sistema de foros y comentarios
-- [ ] Dashboard de administración (Laravel o React)
-- [ ] Interfaz responsive + mejoras visuales (colores Mardu)
-- [ ] Logo final y diseño gráfico estilo medieval
-- [ ] Despliegue (Docker, Laravel Forge o Vercel)
+- [x] Finalizar endpoints de autenticación (login, logout, tokens)
+- [x] Validación en back de todos los formularios
+- [x] Vista de perfil de usuario
+- [x] Gestión de torneos desde el frontend (crear, listar, participar)
+- [x] Sistema de recompensas y vinculación con torneos
+- [x] Sistema de foros y comentarios
+- [x] Dashboard de administración (Laravel o React)
+- [x] Interfaz responsive + mejoras visuales (colores Mardu)
+- [x] Logo final y diseño gráfico estilo medieval
+- [x] Despliegue (Docker, Laravel Forge o Vercel)
 
 ---
 
@@ -64,7 +58,11 @@ Antes de comenzar, asegúrate de tener instalado lo siguiente:
 
 ### Clonar el repositorio
 
+<<<<<<< HEAD
 3. Configurar Laravel
+=======
+## Configurar Laravel
+>>>>>>> b7ba7d9b082f777419285b298cdeb5caa2a58893
 Ejecuta estos comandos dentro del contenedor Laravel:
 
 docker exec -it laravel-app bash
@@ -73,7 +71,11 @@ cp .env.example .env
 php artisan key:generate
 php artisan migrate
 
+<<<<<<< HEAD
 Frontend (React + Vite)
+=======
+## Frontend (React + Vite)
+>>>>>>> b7ba7d9b082f777419285b298cdeb5caa2a58893
 
 cd resources/js
 npm install
@@ -90,6 +92,7 @@ php artisan db:seed
 Comandos útiles React
 npm run build
 
+<<<<<<< HEAD
 Iniciar docker backend:
 docker build -t laravel-backend .
 docker run -d -p 8888:8888 --name laravel-container laravel-backend
@@ -97,3 +100,12 @@ docker run -d -p 8888:8888 --name laravel-container laravel-backend
 Iniciar Frontend
 docker build -t react-app .
 docker run -d -p 5173:5173 --name react-app-container react-app
+=======
+# Iniciar docker backend:
+1º-docker build -t laravel-backend .
+2º-docker run -d -p 8888:8888 --name laravel-container laravel-backend
+
+# Iniciar Frontend
+1º- docker build -t react-app .
+2º- docker run -d -p 5173:5173 --name react-app-container react-app
+>>>>>>> b7ba7d9b082f777419285b298cdeb5caa2a58893
