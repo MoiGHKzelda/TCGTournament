@@ -109,3 +109,7 @@ docker run -d -p 5173:5173 --name react-app-container react-app
 1º- docker build -t react-app .
 2º- docker run -d -p 5173:5173 --name react-app-container react-app
 >>>>>>> b7ba7d9b082f777419285b298cdeb5caa2a58893
+
+# Usuario Admin:
+mail: admin@example.com
+contraseña: admin123
