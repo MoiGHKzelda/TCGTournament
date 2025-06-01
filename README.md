@@ -67,7 +67,7 @@ cp .env.example .env
 php artisan key:generate
 php artisan migrate
 
-##Frontend (React + Vite)
+## Frontend (React + Vite)
 
 cd resources/js
 npm install
