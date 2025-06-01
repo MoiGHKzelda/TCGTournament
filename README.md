@@ -53,4 +53,47 @@ Aplicación web para gestionar torneos de cartas estilo Magic: The Gathering, co
   - 🔴 Rojo (botones o llamadas a la acción)
 
 ---
+Antes de comenzar, asegúrate de tener instalado lo siguiente:
 
+- [Docker](https://www.docker.com/)
+- [Docker Compose](https://docs.docker.com/compose/)
+- [Node.js y npm](https://nodejs.org/) — para ejecutar React localmente si prefieres
+- [Composer](https://getcomposer.org/) — para ejecutar Laravel localmente si prefieres
+
+## 🐳 Cómo iniciar el proyecto con Docker
+
+### Clonar el repositorio
+
+3. Configurar Laravel
+Ejecuta estos comandos dentro del contenedor Laravel:
+
+docker exec -it laravel-app bash
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+
+Frontend (React + Vite)
+
+cd resources/js
+npm install
+npm run dev
+
+Comandos útiles Laravel
+
+Ejecutar migraciones:
+php artisan migrate
+
+Ejecutar seeds:
+php artisan db:seed
+
+Comandos útiles React
+npm run build
+
+Iniciar docker backend:
+docker build -t laravel-backend .
+docker run -d -p 8888:8888 --name laravel-container laravel-backend
+
+Iniciar Frontend
+docker build -t react-app .
+docker run -d -p 5173:5173 --name react-app-container react-app
