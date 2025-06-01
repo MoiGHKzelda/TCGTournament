@@ -88,10 +88,10 @@ Iniciar docker backend:
 docker build -t laravel-backend .
 docker run -d -p 8888:8888 --name laravel-container laravel-backend
 
-Iniciar Frontend
-docker build -t react-app .
-docker run -d -p 5173:5173 --name react-app-container react-app
-=======
+# Iniciar Frontend
+-docker build -t react-app .
+
+-docker run -d -p 5173:5173 --name react-app-container react-app
 
 # Iniciar docker backend:
 -1º-docker build -t laravel-backend .
