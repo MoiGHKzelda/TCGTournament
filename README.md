@@ -56,13 +56,8 @@ Antes de comenzar, asegúrate de tener instalado lo siguiente:
 
 ## 🐳 Cómo iniciar el proyecto con Docker
 
-### Clonar el repositorio
+# Configurar Laravel
 
-<<<<<<< HEAD
-3. Configurar Laravel
-=======
-## Configurar Laravel
->>>>>>> b7ba7d9b082f777419285b298cdeb5caa2a58893
 Ejecuta estos comandos dentro del contenedor Laravel:
 
 docker exec -it laravel-app bash
@@ -71,11 +66,8 @@ cp .env.example .env
 php artisan key:generate
 php artisan migrate
 
-<<<<<<< HEAD
-Frontend (React + Vite)
-=======
-## Frontend (React + Vite)
->>>>>>> b7ba7d9b082f777419285b298cdeb5caa2a58893
+# Frontend (React + Vite)
+
 
 cd resources/js
 npm install
