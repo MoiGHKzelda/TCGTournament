@@ -1,3 +1,4 @@
+
 # TCG Tournament 🃏🔥⚫🔴⚪
 
 Aplicación web para gestionar torneos de cartas estilo Magic: The Gathering, con autenticación, gestión de usuarios, mazos, recompensas y participación en foros.
